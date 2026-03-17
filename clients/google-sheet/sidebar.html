@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Request Sidebar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #ffffff;
+            padding: 20px;
+            color: #202124;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #5f6368;
+            line-height: 1.4;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #202124;
+            display: block;
+        }
+
+        select {
+            padding: 10px 12px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #202124;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        select:hover {
+            border-color: #bdc1c6;
+            background-color: #f8f9fa;
+        }
+
+        select:focus {
+            border-color: #1f73e8;
+            box-shadow: 0 0 0 3px rgba(31, 115, 232, 0.1);
+        }
+
+        select option {
+            padding: 8px 12px;
+        }
+
+        input[type="text"] {
+            padding: 10px 12px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #202124;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder {
+            color: #9aa0a6;
+        }
+
+        input[type="text"]:hover {
+            border-color: #bdc1c6;
+            background-color: #f8f9fa;
+        }
+
+        input[type="text"]:focus {
+            border-color: #1f73e8;
+            box-shadow: 0 0 0 3px rgba(31, 115, 232, 0.1);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .input-wrapper input {
+            flex: 1;
+        }
+
+        button {
+            padding: 10px 24px;
+            background-color: #1f73e8;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            outline: none;
+        }
+
+        button:hover {
+            background-color: #1565d8;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+
+        button:active {
+            background-color: #1450c0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        }
+
+        button:disabled {
+            background-color: #dadce0;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .status.success {
+            display: block;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            display: block;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.loading {
+            display: block;
+            background-color: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>HTTP Request</h1>
+            <p>Configure and execute HTTP requests directly from Google Sheets</p>
+        </div>
+
+        <form id="requestForm">
+            <div class="form-group">
+                <label for="httpMethod">HTTP Method</label>
+                <select id="httpMethod" name="httpMethod" required>
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label for="urlInput">URL</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="urlInput" 
+                        name="url" 
+                        placeholder="https://api.example.com/endpoint"
+                        required
+                    >
+                    <button type="submit" id="runButton">Run</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <script>
+        document.getElementById('requestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const httpMethod = document.getElementById('httpMethod').value;
+            const url = document.getElementById('urlInput').value;
+            const statusDiv = document.getElementById('statusMessage');
+            const runButton = document.getElementById('runButton');
+
+            // Validation
+            if (!url.trim()) {
+                statusDiv.textContent = 'Please enter a valid URL';
+                statusDiv.className = 'status error';
+                return;
+            }
+
+            // Show loading state
+            statusDiv.textContent = 'Sending request...';
+            statusDiv.className = 'status loading';
+            runButton.disabled = true;
+
+            try {
+            // Call the Apps Script backend instead
+            const response = await new Promise((resolve, reject) => {
+                google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(reject)
+                    .makeHttpRequest(httpMethod, url);
+            });
+
+            if (response.success) {
+                const data = response.data;
+                statusDiv.textContent = `✓ Request successful (${response.status})`;
+                statusDiv.className = 'status success';
+                
+                // Write to sheet
+                google.script.run.writeResponseToSheet(data);
+                
+                console.log('Response:', data);
+            } else {
+                statusDiv.textContent = `✗ Request failed: ${response.error || response.status}`;
+                statusDiv.className = 'status error';
+            }
+            } catch (error) {
+                statusDiv.textContent = `✗ Error: ${error.message}`;
+                statusDiv.className = 'status error';
+            } finally {
+                runButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

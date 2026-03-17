@@ -3,18 +3,26 @@ package api
 import (
     "io"
     "net/http"
+    "net/url"
 )
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
     // Get the target URL from query param ?url=https://api.example.com
-    target := r.URL.Query().Get("url")
-    if target == "" {
+    encodedUrl := r.URL.Query().Get("url")
+    if encodedUrl == "" {
         http.Error(w, "Missing 'url' query parameter", http.StatusBadRequest)
         return
     }
 
+    // Decode it
+	decodedUrl, err := url.QueryUnescape(encodedUrl)
+	if err != nil {
+		http.Error(w, "Invalid URL encoding", http.StatusBadRequest)
+		return
+	}
+
     // Make the HTTP request
-    resp, err := http.Get(target)
+    resp, err := http.Get(decodedUrl)
     if err != nil {
         http.Error(w, "Failed to fetch URL: "+err.Error(), http.StatusBadGateway)
         return
