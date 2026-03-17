@@ -1,18 +1,30 @@
 package api
 
 import (
+    "io"
     "net/http"
     "net/http/httptest"
+    "strings"
     "testing"
-    "encoding/json"
 )
 
-func TestHelloHandler(t *testing.T) {
-    req := httptest.NewRequest(http.MethodGet, "/hello", nil)
+func TestProxyHandler(t *testing.T) {
+    // Step 1: Create a fake server to act as the external API
+    fakeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "text/plain")
+        w.WriteHeader(http.StatusOK)
+        io.WriteString(w, "Hello from fake API")
+    }))
+    defer fakeServer.Close()
+
+    // Step 2: Create a request to your ProxyHandler with the fake URL
+    req := httptest.NewRequest(http.MethodGet, "/proxy?url="+fakeServer.URL, nil)
     w := httptest.NewRecorder()
 
-    HelloHandler(w, req)
+    // Step 3: Call the handler
+    ProxyHandler(w, req)
 
+    // Step 4: Check the response
     res := w.Result()
     defer res.Body.Close()
 
@@ -20,13 +32,13 @@ func TestHelloHandler(t *testing.T) {
         t.Errorf("expected status 200, got %d", res.StatusCode)
     }
 
-    var msg Message
-    if err := json.NewDecoder(res.Body).Decode(&msg); err != nil {
-        t.Fatalf("could not decode response: %v", err)
+    body, err := io.ReadAll(res.Body)
+    if err != nil {
+        t.Fatalf("could not read response: %v", err)
     }
 
-    expected := "Hello from API folder"
-    if msg.Text != expected {
-        t.Errorf("expected message %q, got %q", expected, msg.Text)
+    expected := "Hello from fake API"
+    if strings.TrimSpace(string(body)) != expected {
+        t.Errorf("expected body %q, got %q", expected, string(body))
     }
 }
