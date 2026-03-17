@@ -22,6 +22,9 @@ func main() {
 
     r := chi.NewRouter()
 
+    r.Handle("/*", http.FileServer(http.Dir("./clients/ms-excel")))
+
+
     r.Get("/proxy", api.ProxyHandler)
 
     http.ListenAndServe(":"+port, r)
