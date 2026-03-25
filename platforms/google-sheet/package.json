@@ -1,0 +1,23 @@
+{
+  "name": "conecto",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "targets": {
+    "default": {
+      "engines": {
+        "browsers": ["last 2 versions", "ie 11"]
+      },
+      "outputFormat": "global"  
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "parcel:build": "parcel build src/index.html --dist-dir ./apps-script"
+  },
+  "devDependencies": {
+    "parcel": "^2.16.4"
+  }
+}

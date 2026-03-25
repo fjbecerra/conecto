@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @import "./styles.css";
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>HTTP Request</h1>
+            <p>Configure and execute HTTP requests directly from Google Sheets</p>
+        </div>
+
+        <form id="requestForm">
+            <div class="form-group">
+                <label for="httpMethod">HTTP Method</label>
+                <select id="httpMethod" name="httpMethod" required>
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label for="urlInput">URL</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="urlInput" 
+                        name="url" 
+                        placeholder="https://api.example.com/endpoint"
+                        required
+                    >
+                    <button type="submit" id="runButton">Run</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <script type="module">
+        import "./index.js"
+    </script>
+</body>
+</html>

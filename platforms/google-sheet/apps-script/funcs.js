@@ -1,17 +1,3 @@
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('HTTP Tools')
-    .addItem('Open HTTP Request', 'showSidebar')
-    .addToUi();
-}
-
-function showSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile('sidebar')
-    .setWidth(350);
-  SpreadsheetApp.getUi().showModelessDialog(html, 'HTTP Request');
-}
-
-// ADD THIS - Handle the HTTP request from backend
 function makeHttpRequest(method, url) {
   try {
     const encodedUrl = encodeURI(url);
