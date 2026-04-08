@@ -1,0 +1,14 @@
+Data Pipeline Flow
+Step 1 — Pull daily page insights
+
+→ Store in PageInsightsDaily
+
+Step 2 — Pull latest posts (last 7–30 days)
+
+→ Store in PostInsights
+
+Step 3 — Aggregate for report
+Net growth = adds − unlikes
+Engagement rate = engagements / impressions
+Avg engagement per post
+Top posts by engagement or reach

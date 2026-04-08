@@ -1,0 +1,44 @@
+PageInsightsDaily {
+  date: DATE,
+  page_id: STRING,
+
+  // Growth
+  followers: INTEGER,
+  fan_adds_unique: INTEGER,
+  unlikes_unique: INTEGER,
+  net_growth: INTEGER,  // derived: adds - unlikes
+
+  // Reach
+  reach: INTEGER,
+  impressions: INTEGER,
+
+  // Engagement
+  post_engagements: INTEGER,
+  total_actions: INTEGER,
+  talking_about_count: INTEGER,
+
+  // Content (aggregated)
+  post_reach: INTEGER,
+  post_impressions: INTEGER,
+  post_clicks: INTEGER,
+
+  // Video (optional)
+  video_views: INTEGER,
+  video_view_time: INTEGER,
+
+  created_at: TIMESTAMP
+}
+
+
+GET https://graph.facebook.com/v19.0/{page_id}/insights
+  ?metric=page_fans,page_fan_adds_unique,page_fan_removes_unique
+  ,page_impressions,page_impressions_unique
+  ,page_post_engagements,page_actions_post_reactions_like_total
+  ,page_actions_post_reactions_total,page_actions_post_comments_total
+  ,page_actions_post_shares_total,page_total_actions
+  ,page_storytellers
+  ,page_video_views,page_video_view_time
+  &period=day
+  &since=YYYY-MM-DD
+  &until=YYYY-MM-DD
+  &access_token={access_token}

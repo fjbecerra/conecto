@@ -1,0 +1,39 @@
+PostInsights {
+  post_id: STRING,
+  page_id: STRING,
+  created_date: DATE,
+
+  // Core performance
+  impressions: INTEGER,
+  reach: INTEGER,
+  clicks: INTEGER,
+
+  // Engagement
+  reactions: INTEGER,
+  comments: INTEGER,
+  shares: INTEGER,
+  engagement_total: INTEGER,  // engagement_total = reactions + comments + shares + clicks
+
+  // Video (optional)
+  video_views: INTEGER,
+
+  created_at: TIMESTAMP
+}
+
+GET https://graph.facebook.com/v19.0/{page_id}/posts
+  ?fields=id,message,created_time,
+    insights.metric(
+      post_impressions,
+      post_impressions_unique,
+      post_clicks,
+      post_reactions_by_type_total,
+      post_comments,
+      post_shares,
+      post_video_views
+    )
+  &limit=25
+  &access_token={access_token}
+
+  GET https://graph.facebook.com/v19.0/{video_id}/video_insights
+  ?metric=total_video_views,total_video_view_time,total_video_complete_views
+  &access_token={access_token}
