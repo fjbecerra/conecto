@@ -5,12 +5,5 @@
     "spend": { "path": "spend", "type": "float", "default": 0 },
     "clicks": { "path": "clicks", "type": "int", "default": 0 },
     "impressions": { "path": "impressions", "type": "int", "default": 0 }
-  },
-  "computed": {
-    "ctr": {
-      "expr": "(clicks / impressions) * 100",
-      "type": "float",
-      "default" : 0.0
-    }
   }
 }
