@@ -9,7 +9,7 @@ type Connector struct {
 	Provider *PaginationProvider
 }
 
-func (c *Connector) Run(ctx context.Context) (<-chan json.RawMessage, <-chan error) {
+func (c *Connector) Fetch(ctx context.Context) (<-chan json.RawMessage, <-chan error) {
 
 	out := make(chan json.RawMessage, 100)
 	errCh := make(chan error, 1)

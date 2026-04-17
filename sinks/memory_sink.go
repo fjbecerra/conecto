@@ -11,7 +11,7 @@ type MemorySink struct {
     data []core.Record
 }
 
-func NewMemorySink() *MemorySink  {
+func NewMemorySink[T any]() *MemorySink  {
     var mu sync.Mutex
     return &MemorySink{
         mu : mu,

@@ -5,6 +5,7 @@ import (
     "net/http"
     "github.com/go-chi/chi/v5"
     "conecto/api"
+    "conecto/pipelines"
     "github.com/joho/godotenv"
     "log"
 )
@@ -28,4 +29,10 @@ func main() {
     r.Get("/proxy", api.ProxyHandler)
 
     http.ListenAndServe(":"+port, r)
-}
+
+    registry := pipelines.NewRegistry()
+
+    pipeline := registry.Factories["facebookAdInsight"]()
+
+    err := pipeline.Run(ctx)
+}   

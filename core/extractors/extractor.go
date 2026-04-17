@@ -1,7 +1,6 @@
 package extractors
 
 import (
-	"context"
 	"conecto/core"
 )
 
@@ -10,6 +9,6 @@ type BaseExtractor struct {
 }
 
 type Extractor [T any]interface {
-    Extract(ctx context.Context, in <-chan T) (<-chan core.Record, <-chan error)
+    Extract(in T) (core.Record, error)
 }
 

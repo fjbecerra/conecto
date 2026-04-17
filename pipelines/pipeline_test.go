@@ -1,11 +1,12 @@
 package pipelines
 
 import (
-	"conecto/connectors"
 	"conecto/core"
 	"conecto/core/extractors"
+	"conecto/core/sources/rest"
 	"conecto/sinks"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -14,32 +15,44 @@ import (
 )
 
 func TestPipeline(t *testing.T) {
-	json,_ := os.ReadFile("./testdata/ad_insight_action_product_id.json")
-	client := &http.Client{
-    	Transport: &MockRoundTripper{
-			Body: string(json),
-			StatusCode: 200,
-    	},
+	ctx :=context.Background()
+	configPath :="../configs/facebook_ad_insight.json"
+	httpClient := MockHttpClient("./testdata/ad_insight_action_product_id.json")
+	client := rest.NewRestClient(&httpClient)
+	paginationProvider := rest.NewPaginationProvider(
+		client,
+		configPath)
+
+	connector := rest.Connector {
+		Provider: &paginationProvider,
 	}
-	schema:= core.LoadSchema("./schemas/facebook_ad_insight.json")
-	memorySink:=sinks.NewMemorySink()
-	pipeline := &JsonPipeline{
-		connector: connectors.NewJsonRestConnector(
-			client,
-			"url",
-			schema,
-			
-		),
-		extractor: extractors.NewJsonExtractor(schema),
+
+	extractor := extractors.NewJsonExtractor(configPath)
+
+
+	source := &core.MapSource[json.RawMessage, core.Record]{
+		Upstream: &connector,
+		MapFn: func(raw json.RawMessage) core.Record {
+			record,_ := extractor.Extract(raw)
+			return record
+		},
+	}
+
+	memorySink := sinks.NewMemorySink[core.Record]()
+
+
+	pipeline:= &Pipeline[core.Record]{
+		source: source,
 		sink:   memorySink,
 	}
-	pipeline.Run(context.Background())
+	pipeline.Run(ctx)
 	data:= memorySink.Data()
 	if len(data) != 2 {
 		t.Errorf("shoud return %d records", 2)
 	}
 
 }
+
 
 type MockRoundTripper struct {
     Body       string
@@ -49,7 +62,17 @@ type MockRoundTripper struct {
 func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
     return &http.Response{
         StatusCode: m.StatusCode,
-        Body:       io.NopCloser(strings.NewReader(m.Body)),
-        Header:     make(http.Header),
+        Body: io.NopCloser(strings.NewReader(m.Body)),
+        Header: make(http.Header),
     }, nil
+}
+
+func MockHttpClient(jsonReponsePath string) http.Client{
+	json,_ := os.ReadFile(jsonReponsePath)
+	return http.Client{
+		Transport: &MockRoundTripper{
+			Body: string(json),
+			StatusCode: 200,
+		},
+	}
 }

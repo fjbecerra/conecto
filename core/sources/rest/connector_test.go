@@ -24,7 +24,7 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 		Provider: &paginationProvider,
 	}
 
-	out, errCh := connector.Run(ctx)
+	out, errCh := connector.Fetch(ctx)
 
 	for err := range errCh {
 		if err != nil {
