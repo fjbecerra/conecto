@@ -10,10 +10,10 @@ type MapSource[INPUT any, OUTPUT any] struct {
 	MapFn    func(INPUT) OUTPUT
 }
 
-func (m *MapSource[A, B]) Fetch(ctx context.Context) (<-chan B, <-chan error) {
+func (m *MapSource[INPUT, OUTPUT]) Fetch(ctx context.Context) (<-chan OUTPUT, <-chan error) {
 	in, errCh := m.Upstream.Fetch(ctx)
 
-	out := make(chan B)
+	out := make(chan OUTPUT)
 
 	go func() {
 		defer close(out)

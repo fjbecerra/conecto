@@ -5,15 +5,15 @@ import (
 	"context"
 )
 
-type FlatMapSource[A any, B any] struct {
-	Upstream sources.Source[A]
-	MapFn    func(A) []B
+type FlatMapSource[INPUT any, OUTPUT any] struct {
+	Upstream sources.Source[INPUT]
+	MapFn    func(INPUT) []OUTPUT
 }
 
-func (f *FlatMapSource[A, B]) Fetch(ctx context.Context) (<-chan B, <-chan error) {
+func (f *FlatMapSource[INPUT, OUTPUT]) Fetch(ctx context.Context) (<-chan OUTPUT, <-chan error) {
 	in, errCh := f.Upstream.Fetch(ctx)
 
-	out := make(chan B)
+	out := make(chan OUTPUT)
 
 	go func() {
 		defer close(out)
