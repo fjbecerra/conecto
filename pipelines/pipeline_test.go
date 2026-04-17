@@ -7,20 +7,21 @@ import (
 	"conecto/sinks"
 	"context"
 	"encoding/json"
-	"io"
-	"net/http"
-	"os"
-	"strings"
 	"testing"
+	"conecto/testutils"
 )
 
 func TestPipeline(t *testing.T) {
 	ctx :=context.Background()
 	configPath :="../configs/facebook_ad_insight.json"
-	httpClient := MockHttpClient("./testdata/ad_insight_action_product_id.json")
-	client := rest.NewRestClient(&httpClient)
+	mockClient := testutils.MockClient{
+		Calls: map[int]string {
+				1:page1,
+				2:page2,
+		},
+	}
 	paginationProvider := rest.NewPaginationProvider(
-		client,
+		&mockClient,
 		configPath)
 
 	connector := rest.Connector {
@@ -47,32 +48,27 @@ func TestPipeline(t *testing.T) {
 	}
 	pipeline.Run(ctx)
 	data:= memorySink.Data()
-	if len(data) != 2 {
-		t.Errorf("shoud return %d records", 2)
+	if len(data) != 3 {
+		t.Errorf("shoud return %d records", 3)
 	}
 
 }
 
+var page1 = `{
+  "data": [
+    {"clicks": 1},
+    {"clicks": 2}
+  ],
+  "paging": {
+    "cursors": {
+      "after": "cursor-1"
+    }
+  }
+}`
 
-type MockRoundTripper struct {
-    Body       string
-    StatusCode int
-}
-
-func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-    return &http.Response{
-        StatusCode: m.StatusCode,
-        Body: io.NopCloser(strings.NewReader(m.Body)),
-        Header: make(http.Header),
-    }, nil
-}
-
-func MockHttpClient(jsonReponsePath string) http.Client{
-	json,_ := os.ReadFile(jsonReponsePath)
-	return http.Client{
-		Transport: &MockRoundTripper{
-			Body: string(json),
-			StatusCode: 200,
-		},
-	}
-}
+var page2 = `{
+  "data": [
+    {"clicks": 5}
+  ],
+  "paging": {}
+}`

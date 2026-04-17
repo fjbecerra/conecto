@@ -2,14 +2,14 @@ package rest
 
 import (
 	"context"
-	"encoding/json"
+	"conecto/testutils"
 	"testing"
 )
 
 func TestEmit5ElementsOverPaginating(t *testing.T) {	
 	ctx := context.Background()
-	mockClient := MockClient{
-		calls: map[int]string {
+	mockClient := testutils.MockClient{
+		Calls: map[int]string {
 				1:page1,
 				2:page2,
 				3:page3,
@@ -45,10 +45,6 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 }
 
 
-type MockClient struct {
-	calls map[int]string
-}
-
 var page1 = `{
   "data": [
     {"clicks": 1},
@@ -79,15 +75,3 @@ var page3 = `{
   ],
   "paging": {}
 }`
-
-var pageCount = 0
-func (m *MockClient) Fetch(ctx context.Context, url string) ([]byte, error) {
-	pageCount++
-	return extract(m.calls[pageCount])
-	
-}
-
-func extract(body string) ([]byte, error) {
-	return json.RawMessage([]byte(body)), nil
-}
-
