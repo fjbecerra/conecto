@@ -5,11 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 )
 
-var extractor = NewJsonExtractor(core.LoadSchema("../../pipelines/schemas/facebook_ad_insight.json"))
+var extractor = NewJsonExtractor("../../configs/facebook_ad_insight.json")
 var ctx = context.Background()
 
 func TestEmptyResponse(t *testing.T) {	
@@ -29,9 +28,13 @@ func TestEmptyResponse(t *testing.T) {
 
 func TestExtractValuesFromFieldsOfFbInsightAd(t *testing.T) {
 	in := make(chan json.RawMessage, 1)
-
-    json,_ := os.ReadFile("./testdata/item_fb_insight_ad.json")	
-    in <- json
+	var raw = `{
+		"spend" : 1.5
+		"clicks" : 1,
+		"impressions: 2
+	}`
+	rawMessage := json.RawMessage([]byte(raw))
+    in <- rawMessage
     close(in) // 🔥 critical
 
     recordsCh, errCh := extractor.Extract(ctx, in)
@@ -49,9 +52,12 @@ func TestExtractValuesFromFieldsOfFbInsightAd(t *testing.T) {
         }
     }
 
-    if len(records[0]) != 3 {
-        t.Errorf("expected 3 records, received %d", len(records))
+    if len(records) != 1 {
+        t.Errorf("expected 1 records, received %d", len(records))
     }
-	
+
+	if len(records[0]) != 3 {
+		t.Errorf("expected 3 fields, recieved %d", len(records[0]))
+	}	
 }
 

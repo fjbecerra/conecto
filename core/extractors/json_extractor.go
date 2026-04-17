@@ -10,12 +10,14 @@ import (
 )
 
 type JsonExtractor struct {
-    core.BaseExtractor
+    Base BaseExtractor
 }
 
-func NewJsonExtractor(schemaConfig core.SchemaConfig) core.Extractor[json.RawMessage] {
+func NewJsonExtractor(configPath string) Extractor[json.RawMessage] {
     return &JsonExtractor{
-        BaseExtractor: core.BaseExtractor{Schema: schemaConfig}, 
+        Base: BaseExtractor{
+            Config: core.LoadConfig[FieldsConfig](configPath),
+        },
     }
 }
 
@@ -29,7 +31,7 @@ func (e *JsonExtractor) Extract(ctx context.Context, in <-chan json.RawMessage) 
             }
             row := make(map[string]interface{})
 
-            for field, cfg := range e.BaseExtractor.Schema.Fields {
+            for field, cfg := range e.Base.Config.Data.Fields {
                 val := parsed.Get(cfg.Path)
 
                 if val.Exists() {

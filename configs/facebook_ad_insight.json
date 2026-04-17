@@ -1,0 +1,23 @@
+{
+  "base_url" : "http://anyurl",
+  "data": {
+    "path": "data",
+    "is_array": true,
+    "fields": {
+      "spend": { "path": "spend", "type": "float", "default": 0 },
+      "clicks": { "path": "clicks", "type": "int", "default": 0 },
+      "impressions": { "path": "impressions", "type": "int", "default": 0 }
+    }
+  },
+  "pagination": {
+    "type": "cursor",
+    "request": {
+      "param": "after"
+    },
+    "response": {
+      "next": {
+        "path": "paging.cursors.after"
+      }
+    }
+  }
+}

@@ -1,9 +1,10 @@
 package pipelines
 
 import (
-	"conecto/connectors"
 	"conecto/core"
 	"conecto/core/extractors"
+	"conecto/core/sources"
+    "conecto/core/sources/rest"
 	"conecto/sinks"
 	"context"
 	"encoding/json"
@@ -21,14 +22,14 @@ type Registry struct {
 }
 
 type JsonPipeline struct {
-    connector core.Connector[json.RawMessage]
-    extractor core.Extractor[json.RawMessage]
+    connector sources.Source[json.RawMessage]
+    extractor extractors.Extractor[json.RawMessage]
     sink      core.Sink
 }
 
 func (p *JsonPipeline) Run(ctx context.Context) error {
     // 1. Connector
-    out, errCh1 := p.connector.Run(ctx)
+    out, errCh1 := p.connector.Fetch(ctx)
 
     // 2. Extractor
     recordsCh, errCh2 := p.extractor.Extract(ctx, out)
@@ -71,25 +72,38 @@ func (p *JsonPipeline) Run(ctx context.Context) error {
     return nil
 }
 
+//i may put the config outside and discover them by looping 
 func NewRegistry() *Registry {
     return &Registry{
         Factories: map[string]PipelineFactory{
             "facebookAdInsight": func() Pipeline {
-                return NewFacebookAdInsightPipeline()
+                return NewPipeline("./schemas/facebook_ad_insight.json")
             },
         },
     }
 }
 
-func NewFacebookAdInsightPipeline() *JsonPipeline {
-    schema := core.LoadSchema("./schemas/facebook_ad_insight.json")
+func NewPipeline(configPath string) *JsonPipeline {
+    //Intialize http
+    //Initiazize restclient
+    //initialize pagination provider
+    //initialize connector
+    client := rest.NewRestClient(http.DefaultClient)
+	paginationProvider := rest.NewPaginationProvider(
+		client,
+		configPath, 
+		"http://base-url")
+
+	connector := Connector {
+		Provider: &paginationProvider,
+	}
 
     return &JsonPipeline{
         connector: connectors.NewJsonRestConnector(
             http.DefaultClient, //todo set more advance options
             "url",
-            schema),
-        extractor: extractors.NewJsonExtractor(schema),
+            config),
+        extractor: extractors.NewJsonExtractor(config),
         sink:      sinks.NewMemorySink(),
     }
 }

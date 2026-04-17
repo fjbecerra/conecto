@@ -40,16 +40,16 @@ func StreamMap[T any, R any](
     return out, errs
 }
 
-func LoadSchema(path string) SchemaConfig{
+func LoadConfig[T any](path string) T{
     data, err := os.ReadFile(path)
     if err != nil {
         panic(err)
     }
-    var schema SchemaConfig
+    var config T
 
-    err = json.Unmarshal(data, &schema)
+    err = json.Unmarshal(data, &config)
     if err != nil {
         panic(err)
     }
-    return schema
+    return config
 }
