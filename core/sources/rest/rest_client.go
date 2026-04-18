@@ -12,6 +12,7 @@ type IClient interface {
 
 type RestClient struct{
 	client *http.Client
+	tokenProvider TokenProvider
 }
 
 func NewRestClient(client *http.Client) *RestClient{
@@ -26,7 +27,11 @@ func (c *RestClient) Fetch(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if c.tokenProvider != nil {
+		if err := c.tokenProvider.Apply(req); err != nil {
+			return nil, err
+		}
+	}
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
