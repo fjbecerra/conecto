@@ -5,7 +5,6 @@ import (
     "net/http"
     "github.com/go-chi/chi/v5"
     "conecto/api"
-    "conecto/pipelines"
     "github.com/joho/godotenv"
     "log"
 )
@@ -30,9 +29,9 @@ func main() {
 
     http.ListenAndServe(":"+port, r)
 
-    registry := pipelines.NewRegistry()
+    //registry := pipelines.NewRegistry()
 
-    pipeline := registry.Factories["facebookAdInsight"]()
+   // pipeline := registry.Factories["facebookAdInsight"]()
 
-    err := pipeline.Run(ctx)
+   // err := pipeline.Run(ctx)
 }   

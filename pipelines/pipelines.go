@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"runtime"
 )
 
 type Pipeline[T any] struct {
@@ -68,6 +69,7 @@ func NewPipeline(configPath string) *Pipeline[core.Record]{
 			record,_ := extractor.Extract(raw)
 			return record
 		},
+		Workers: runtime.NumCPU(),
 	}
 
 	sink := sinks.NewMemorySink[core.Record]()

@@ -5,10 +5,11 @@ import (
 	"conecto/core/extractors"
 	"conecto/core/sources/rest"
 	"conecto/sinks"
+	"conecto/testutils"
 	"context"
 	"encoding/json"
+	"runtime"
 	"testing"
-	"conecto/testutils"
 )
 
 func TestPipeline(t *testing.T) {
@@ -37,6 +38,7 @@ func TestPipeline(t *testing.T) {
 			record,_ := extractor.Extract(raw)
 			return record
 		},
+		Workers: runtime.NumCPU(),
 	}
 
 	memorySink := sinks.NewMemorySink[core.Record]()
