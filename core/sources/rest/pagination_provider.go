@@ -5,31 +5,23 @@ import (
 	"encoding/json"
 	"net/url"
 	"github.com/tidwall/gjson"
-	"conecto/core"
 )
 
-
-
 type PaginationProvider struct {
-	Client 	  IClient
-	Config    ResponseConfig
-}
-
-func NewPaginationProvider(client IClient, configPath string) PaginationProvider{
-	
-	return PaginationProvider{
-		Client: client,
-		Config: core.LoadConfig[ResponseConfig](configPath),
-	}
+	Client 	IClient
+	BaseUrl string
+	DataPath string
+	ResponseNextPath string
+	RequestParam string
 }
 
 func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *Cursor) (Page[json.RawMessage], error) {
 
-	u, _ := url.Parse(p.Config.BaseUrl)
+	u, _ := url.Parse(p.BaseUrl)
 	q := u.Query()
 
-	if cursor != nil && p.Config.Pagination.Request.Param != "" {
-		q.Set(p.Config.Pagination.Request.Param, cursor.Value)
+	if cursor != nil && p.RequestParam != "" {
+		q.Set(p.RequestParam, cursor.Value)
 	}
 
 	u.RawQuery = q.Encode()
@@ -40,14 +32,14 @@ func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *Cursor) (Pag
 	}
 
 	// extract next cursor
-	next := gjson.GetBytes(body, p.Config.Pagination.Response.Next.Path).String()
+	next := gjson.GetBytes(body, p.ResponseNextPath).String()
 
 	var nextCursor *Cursor
 	if next != "" {
 		nextCursor = &Cursor{Value: next}
 	}
 
-	res := gjson.GetBytes(body, p.Config.Data.Path)
+	res := gjson.GetBytes(body, p.DataPath)
 	
 	var rows []json.RawMessage
 	for _, item := range res.Array() {

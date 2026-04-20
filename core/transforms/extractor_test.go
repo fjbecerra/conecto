@@ -1,4 +1,4 @@
-package extractors
+package transforms
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-var extractor = NewJsonExtractor("../../configs/facebook_ad_insight.json")
 var ctx = context.Background()
 
 func TestEmptyResponse(t *testing.T) {	
+	extractor := Extractor{}
 	in := make(chan json.RawMessage, 1)
 	in <- []byte("")
 	_, error := extractor.Extract([]byte(""))
@@ -21,6 +21,25 @@ func TestEmptyResponse(t *testing.T) {
 }
 
 func TestExtractValuesFromFieldsOfFbInsightAd(t *testing.T) {
+	extractor := Extractor{
+		Fields:Fields{
+			"spend": {
+				Path: "spend",
+				Type: "float64",
+				Default : 0,
+			},
+			"clicks": {
+				Path: "clicks",
+				Type: "int",
+				Default : 0,
+			},
+			"impressions": {
+				Path: "impressions",
+				Type: "int",
+				Default : 0,
+			},
+		},
+	}
 	var raw = `{
 		"spend" : 1.5
 		"clicks" : 1,

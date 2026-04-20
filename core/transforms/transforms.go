@@ -1,4 +1,4 @@
-package core
+package transforms
 
 import (
 	"conecto/core/sources"

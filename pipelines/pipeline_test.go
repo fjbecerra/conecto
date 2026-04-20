@@ -2,9 +2,9 @@ package pipelines
 
 import (
 	"conecto/core"
-	"conecto/core/extractors"
+	"conecto/core/transforms"
 	"conecto/core/sources/rest"
-	"conecto/sinks"
+	"conecto/core/sinks"
 	"conecto/testutils"
 	"context"
 	"encoding/json"
@@ -14,25 +14,31 @@ import (
 
 func TestPipeline(t *testing.T) {
 	ctx :=context.Background()
-	configPath :="../configs/facebook_ad_insight.json"
+	config := core.LoadConfig("../configs/facebook_ad_insight.json")
 	mockClient := testutils.MockClient{
 		Calls: map[int]string {
 				1:page1,
 				2:page2,
 		},
 	}
-	paginationProvider := rest.NewPaginationProvider(
-		&mockClient,
-		configPath)
+	paginationProvider := rest.PaginationProvider{
+		Client: &mockClient,
+		BaseUrl: config.BaseUrl,
+		DataPath: config.Data.Path,
+		ResponseNextPath: config.Pagination.Response.Next.Path,
+		RequestParam: config.Pagination.Request.Param,
+	}
 
 	connector := rest.Connector {
 		Provider: &paginationProvider,
 	}
 
-	extractor := extractors.NewJsonExtractor(configPath)
+	extractor := transforms.Extractor{
+		Fields: transforms.Fields(config.Data.FieldsConfig.Fields),
+	}
 
 
-	source := &core.MapSource[json.RawMessage, core.Record]{
+	source := &transforms.MapSource[json.RawMessage, core.Record]{
 		Upstream: &connector,
 		MapFn: func(raw json.RawMessage) core.Record {
 			record,_ := extractor.Extract(raw)

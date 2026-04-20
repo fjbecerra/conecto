@@ -1,27 +1,23 @@
-package extractors
+package transforms
 
 import (
 	"conecto/core"
 	"encoding/json"
 	"fmt"
-
 	"github.com/tidwall/gjson"
 )
 
-type JsonExtractor struct {
-    Base BaseExtractor
+type Fields map[string]struct{
+	Path    string    
+	Type    string
+	Default interface{}
 }
 
-func NewJsonExtractor(configPath string) Extractor[json.RawMessage] {
-    return &JsonExtractor{
-        Base: BaseExtractor{
-            Config: core.LoadConfig[FieldsConfig](configPath),
-        },
-    }
+type Extractor struct {
+    Fields Fields
 }
 
-
-func (e *JsonExtractor) Extract(in json.RawMessage) (core.Record, error) {
+func (e *Extractor) Extract(in json.RawMessage) (core.Record, error) {
     parsed := gjson.ParseBytes(in)
 
     if !parsed.Exists() || parsed.Type == gjson.Null {
@@ -29,7 +25,7 @@ func (e *JsonExtractor) Extract(in json.RawMessage) (core.Record, error) {
     }
     row := make(map[string]interface{})
 
-    for field, cfg := range e.Base.Config.Data.Fields {
+    for field, cfg := range e.Fields {
         val := parsed.Get(cfg.Path)
 
         if val.Exists() {

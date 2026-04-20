@@ -15,10 +15,13 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 				3:page3,
 		},
 	}
-	paginationProvider := NewPaginationProvider(
-		&mockClient,
-		"../../../configs/facebook_ad_insight.json", 
-	)
+	paginationProvider := PaginationProvider{
+		Client : &mockClient,
+    BaseUrl: "http://anyurl.com",
+    DataPath: "data",
+    ResponseNextPath: "paging.cursors.after",
+		RequestParam: "after",
+  }
 
 	connector := Connector {
 		Provider: &paginationProvider,
