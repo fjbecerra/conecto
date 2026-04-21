@@ -10,9 +10,9 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 	ctx := context.Background()
 	mockClient := testutils.MockClient{
 		Calls: map[int]string {
-				1:page1,
-				2:page2,
-				3:page3,
+				0:page1,
+				1:page2,
+				2:page3,
 		},
 	}
 	paginationProvider := PaginationProvider{

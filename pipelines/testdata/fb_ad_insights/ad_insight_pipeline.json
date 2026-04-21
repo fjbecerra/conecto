@@ -1,0 +1,42 @@
+{
+  "source" : {
+    "type" : "mocked_rest",
+    "mocked_rest":{
+      "data": {
+        "path" : "data",
+        "is_array": true    
+      },  
+      "pagination": {
+        "type": "cursor",
+        "request": {
+          "param": "after"
+        },
+        "response": {
+          "next": {
+            "path": "paging.cursors.after"
+          }
+        }
+      },
+      "response_paths" : [
+        "./testdata/fb_ad_insights/response_page_1_action_product_id.json",
+        "./testdata/fb_ad_insights/response_page_2_action_product_id.json"
+      ]
+    }
+  },
+  "transforms" : [
+    { 
+      "type":"extractor", 
+      "extractor":{
+        "fields": {
+          "spend": { "path": "spend", "type": "float", "default": 0 },
+          "clicks": { "path": "clicks", "type": "int", "default": 0 },
+          "impressions": { "path": "impressions", "type": "int", "default": 0 }
+        }
+      },
+      "workers" : 5
+    }
+  ],
+  "sink" : {
+    "type" : "sink_memory"    
+  }
+}

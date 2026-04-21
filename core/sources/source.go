@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type Source[INPUT any] interface {
-	Fetch(ctx context.Context) (<-chan INPUT, <-chan error)
+type Source[OUT any] interface {
+	Fetch(ctx context.Context) (<-chan OUT, <-chan error)
 }
 

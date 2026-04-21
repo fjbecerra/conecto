@@ -15,9 +15,10 @@ type RestClient struct{
 	tokenProvider TokenProvider
 }
 
-func NewRestClient(client *http.Client) *RestClient{
+func NewRestClient(client *http.Client, tokenProvicer TokenProvider) *RestClient{
     return &RestClient{
         client: client,
+		tokenProvider: tokenProvicer,
     }
 }
 

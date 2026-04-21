@@ -1,17 +1,19 @@
 package pipelines
 
-import "conecto/core"
-
-type Registry struct {
-    Factories map[string]PipelineFactory
+type Registry[T any] struct {
+    Factories map[string]T
 }
 
-func NewRegistry() *Registry {
-    return &Registry{
+func NewRegistryPipeline() *Registry[PipelineFactory] {
+    return &Registry[PipelineFactory]{
         Factories: map[string]PipelineFactory{
-            "facebookAdInsight": func() Pipeline[core.Record] {
-                return *NewPipeline("./schemas/facebook_ad_insight.json")
+            "fbAdInsight": func() PipelineRunner {
+                return BuildPipeline("../config/facebook_ad_insight_pipeline.json")
+            },
+             "mockedFbAdInsight": func() PipelineRunner {
+                return BuildPipeline("./testdata/fb_ad_insights/ad_insight_pipeline.json")
             },
         },
     }
 }
+

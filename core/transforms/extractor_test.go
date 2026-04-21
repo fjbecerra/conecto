@@ -50,7 +50,27 @@ func TestExtractValuesFromFieldsOfFbInsightAd(t *testing.T) {
     records, _ := extractor.Extract(in)
 
     if len(records) != 3 {
-        t.Errorf("expected 1 records, received %d", len(records))
+        t.Errorf("expected 3 records, received %d", len(records))
+    }
+
+	
+}
+
+func TestEmptyFields(t *testing.T) {
+	extractor := Extractor{
+		Fields:nil,
+	}
+	var raw = `{
+		"spend" : 1.5
+		"clicks" : 1,
+		"impressions: 2
+	}`
+	in := json.RawMessage([]byte(raw))    
+
+    records, _ := extractor.Extract(in)
+
+    if len(records) != 0 {
+        t.Errorf("expected 0 records, received %d", len(records))
     }
 
 	

@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-type Sink [T any] interface {
-    Write(ctx context.Context, in <-chan T) <- chan error
+type Sink [IN any] interface {
+    Write(ctx context.Context, in <-chan IN) <- chan error
 }

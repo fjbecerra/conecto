@@ -1,25 +1,24 @@
 package sinks
 
 import (
-	"conecto/core"
 	"context"
 	"sync"
 )
 
-type MemorySink struct {
+type SinkMemory[IN any] struct {
     mu   sync.Mutex
-    data []core.Record
+    data []IN
 }
 
-func NewMemorySink[T any]() *MemorySink  {
+func NewMemorySink[IN any]() *SinkMemory[IN]{
     var mu sync.Mutex
-    return &MemorySink{
+    return &SinkMemory[IN]{
         mu : mu,
-        data: make([]core.Record, 0),
+        data: make([]IN, 0),
     }
 }
 
-func (m *MemorySink) Write(ctx context.Context, in <-chan core.Record) <- chan error {
+func (m *SinkMemory[IN]) Write(ctx context.Context, in <-chan IN) <- chan error {
     errCh := make(chan error, 1)
 
     go func() {
@@ -35,11 +34,11 @@ func (m *MemorySink) Write(ctx context.Context, in <-chan core.Record) <- chan e
     return errCh
 }
 
-func (m *MemorySink) Data() []core.Record {
+func (m *SinkMemory[IN]) Data() []IN {
     m.mu.Lock()
     defer m.mu.Unlock()
 
-    out := make([]core.Record, len(m.data))
+    out := make([]IN, len(m.data))
     copy(out, m.data)
     return out
 }

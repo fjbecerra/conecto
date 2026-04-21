@@ -5,26 +5,16 @@ import (
 	"os"
 )
 
-type Config struct {
-	BaseUrl string `json:"base_url"`
+type SourceConfig struct{
+	Type SourceType `json:"type"`
+	RestConfig *RestConfig `json:"rest,omitempty"`
+	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
+}
+type BaseRestConfig struct{
 	Data struct {
 		Path    string `json:"path"`
 		IsArray bool   `json:"is_array"`
-		FieldsConfig struct{
-			Fields map[string]struct{
-				Path    string      `json:"path"`
-				Type    string      `json:"type"`
-				Default interface{} `json:"default"`
-			} `json:"fields"`
-		}	
 	}`json:"data"`
-
-	Authentication struct{
-		QueryToken struct {
-			ParamName string `json:"param_name"`
-		}`json:"query_token"`
-	}`json:"authentication"`
-
 	Pagination struct {
 		Type string `json:"type"`
 
@@ -38,14 +28,55 @@ type Config struct {
 			} `json:"next"`
 		} `json:"response"`
 	} `json:"pagination"`
+
+}
+type RestConfig struct {
+	BaseRestConfig
+	BaseUrl string `json:"base_url"`
+	Authentication struct{
+		Type string `json:"type"`
+		QueryToken struct {
+			ParamName string `json:"param_name"`
+		}`json:"query_token"`
+	}`json:"authentication"`
 }
 
-func LoadConfig(path string) Config{
+type MockedRestConfig struct{
+	ResponsePaths []string `json:"response_paths"`
+	BaseRestConfig
+}
+
+type TransformConfig struct {
+	Type TransformType `json:"type"`
+	ExtractorConfig *ExtractorConfig `json:"extractor,omitempty"`
+	Workers int `json:"workers"`
+}
+
+type ExtractorConfig struct {	
+	FieldsConfig map[string]struct{
+		Path    string      `json:"path"`
+		Type    string      `json:"type"`
+		Default interface{} `json:"default"`
+	} `json:"fields"`	
+}
+
+type SinkConfig struct {
+	Type  SinkType `json:"type"`
+}
+
+
+type ConfigPipeline struct {
+	SourceConfig SourceConfig `json:"source"`
+	TransformsConfig []TransformConfig `json:"transforms"`
+	SinkConfig SinkConfig `json:"sink"`
+}
+
+func LoadConfigPipeline(path string) ConfigPipeline{
     data, err := os.ReadFile(path)
     if err != nil {
         panic(err)
     }
-    var config Config
+    var config ConfigPipeline
 
     err = json.Unmarshal(data, &config)
     if err != nil {
