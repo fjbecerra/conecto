@@ -53,22 +53,38 @@ type TransformConfig struct {
 }
 
 type ExtractorConfig struct {	
-	FieldsConfig map[string]struct{
-		Path    string      `json:"path"`
-		Type    string      `json:"type"`
-		Default interface{} `json:"default"`
-	} `json:"fields"`	
+	Fields string `json:"fields"`	
+}
+
+type FieldsConfig map[string]struct{
+	Path    string      `json:"path"`
+	Type    string      `json:"type"`
+	Default interface{} `json:"default"`
+	Required bool		`json:"required"`
+}
+
+type RDBSConfig struct {
+	DBType RdbsType `json:"db_type"` // postgres, mysql, bigquery
+	DSN    string `json:"dsn"`
+    Table 	string  `json:"table"`
+	BatchSize int `json:"batch_size"`
+	Schema string `json:"schema"`
 }
 
 type SinkConfig struct {
 	Type  SinkType `json:"type"`
+	RDBSConfig RDBSConfig `json:"rdbs"`
 }
 
+type AdditionalConfig map[string]struct {
+	FieldsConfig FieldsConfig `json:"fields_config"`
+}
 
 type ConfigPipeline struct {
 	SourceConfig SourceConfig `json:"source"`
 	TransformsConfig []TransformConfig `json:"transforms"`
 	SinkConfig SinkConfig `json:"sink"`
+	AdditionalConfigs AdditionalConfig `json:"additional_configs"`
 }
 
 func LoadConfigPipeline(path string) ConfigPipeline{

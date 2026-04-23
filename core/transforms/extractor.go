@@ -11,6 +11,7 @@ type Fields map[string]struct{
 	Path    string    
 	Type    string
 	Default interface{}
+    Required bool
 }
 
 type Extractor struct {

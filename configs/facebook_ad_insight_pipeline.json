@@ -28,16 +28,28 @@
     { 
       "type":"extractor",
       "extractor": { 
-        "fields": {
-          "spend": { "path": "spend", "type": "float", "default": 0 },
-          "clicks": { "path": "clicks", "type": "int", "default": 0 },
-          "impressions": { "path": "impressions", "type": "int", "default": 0 }
-        }
+        "fields": "fields_config"
       },
       "workers" : 5
     }
   ],
   "sink" : {
-    "type" : "sink_memory"    
+    "type" : "rdbs",
+    "rdbs" : {
+        "db_type" : "postgres",
+        "dsn" : "",
+        "table" : "",
+        "schema" : "fields_config",
+        "batch_size" : 10
+    } 
+  },
+
+  "additional_configs": {
+    "fields_config" : {
+      "spend": { "path": "spend", "type": "float","required" : false, "default": 0 },
+      "clicks": { "path": "clicks", "type": "int", "required" : false, "default": 0 },
+      "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 }
+    }
   }
+
 }

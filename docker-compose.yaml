@@ -1,0 +1,24 @@
+services:
+  database_postgres:    
+    image: postgres:18.3
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: username
+      POSTGRES_DB: database_name 
+    volumes:
+      - ${HOME}/postgres-data/:/var/lib/postgresql    
+
+  pgweb:
+    container_name: pgweb
+    restart: always
+    image: sosedoff/pgweb:0.17.0
+    ports:
+      - 8081:8081
+    links:
+      - database_postgres:database_postgres
+    environment:
+      - PGWEB_DATABASE_URL=postgres://username:password@database_postgres:5432/database_name?sslmode=disable
+    depends_on:
+      - database_postgres
