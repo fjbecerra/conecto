@@ -40,16 +40,18 @@
         "dsn" : "",
         "table" : "",
         "schema" : "fields_config",
-        "upsert" : "tenantid,date",
+        "upsert" : "product_id,date_start",
         "batch_size" : 10
     } 
   },
 
   "additional_configs": {
     "fields_config" : {
-      "spend": { "path": "spend", "type": "float","required" : false, "default": 0 },
+      "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
       "clicks": { "path": "clicks", "type": "int", "required" : false, "default": 0 },
-      "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 }
+      "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 },
+      "product_id": { "path": "product_id", "type": "int", "required" : false, "default": 0 },
+      "date_start": { "path": "date_start", "type": "time", "required" : false, "default": 0 }
     }
   }
 

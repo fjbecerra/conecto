@@ -4,6 +4,8 @@ import (
 	"conecto/core"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/tidwall/gjson"
 )
 
@@ -47,6 +49,9 @@ func castGJSON(val gjson.Result, typ string) interface{} {
         return val.Float()
     case "bool":
         return val.Bool()
+    case "time":
+        time,_:= time.Parse("2006-01-02", val.Str)
+        return time
     default:
         return val.String()
     }

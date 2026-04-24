@@ -18,12 +18,15 @@ type PaginationProvider struct {
 
 func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *Cursor) (Page[json.RawMessage], error) {
 
-	u, _ := url.Parse(p.BaseUrl)
+	var u, _ = url.Parse(p.BaseUrl)
 	q := u.Query()
 
 	if cursor != nil && p.RequestParam != "" {
 		q.Set(p.RequestParam, cursor.Value)
 	}
+	// else if cursor != nil {
+	// 	u, _ = url.Parse(cursor.Value)
+	// }
 
 	u.RawQuery = q.Encode()
 

@@ -4,6 +4,7 @@ import (
 	"conecto/core"
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 
@@ -82,6 +83,8 @@ func (rdbs *Rdbs) insertBatchTx(
 		rdbs.Upsert,
 		len(batch),
 	)
+
+	fmt.Println(query)
 
 	values := make([]interface{}, 0, len(batch)*len(rdbs.Schema.Columns))
 

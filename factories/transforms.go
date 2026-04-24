@@ -31,7 +31,7 @@ func (transform *Transform) Build() sources.Source[core.Record] {
 				var fn  core.Transform[json.RawMessage,core.Record]
 				switch t.Type {
 					case core.TransformExtractor :						
-						fieldsConfig := transform.AdditinalConfigs[t.ExtractorConfig.Fields].FieldsConfig						
+						fieldsConfig := transform.AdditinalConfigs[t.ExtractorConfig.Fields]
 						fn = buildExtractor(fieldsConfig)
 					default:
 						panic("unsupported transform")

@@ -19,13 +19,13 @@ func TestMockedFbAdInsightPipeline(t *testing.T) {
 	}
 }
 
-	
-
-func TestPokemonPipeline(t *testing.T) {
+//todo run containers when integrations tests run
+//this tests depends on postgres container. 
+func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 
 	registry := NewRegistryPipeline()
 
-   	pipeline := registry.Factories["pokeApi"]()
+   	pipeline := registry.Factories["fbAdInsight"]()
 
 	ctx :=context.Background()
 	error:=pipeline.Run(ctx)
@@ -34,6 +34,7 @@ func TestPokemonPipeline(t *testing.T) {
 		t.Error(error.Error())
 	}
 }
+
 
 func BuildPipelineTest(configPath string ,sink *sinks.SinkMemory) PipelineRunner{
 	config := core.LoadConfigPipeline(configPath)
