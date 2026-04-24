@@ -32,9 +32,6 @@
       "workers" : 5
     }
   ],
-  "sink" : {
-    "type" : "sink_memory"    
-  },
   "additional_configs": {
     "fields_config" : {
       "spend": { "path": "spend", "type": "float","required" : false, "default": 0 },

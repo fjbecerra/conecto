@@ -16,7 +16,6 @@ const (
 
 type SinkType string
 const (
-	SinkMemory  SinkType = "sink_memory"
 	Rdbs  SinkType = "rdbs"
 )
 

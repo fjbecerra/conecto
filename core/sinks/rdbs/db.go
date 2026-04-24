@@ -6,19 +6,20 @@ import (
 	"database/sql"
 )
 
-type Field struct {
-	Name string
-	Default interface{}
-}
 
 type Schema struct {
-	Fields []Field
-} 
+	Table   string
+	Columns []string
+}
+
+type Upsert struct {
+	ConflictColumns []string
+}
 
 type Rdbs struct {
-	DB      *sql.DB
-	Table   string
+	DB      *sql.DB	
 	Schema  Schema
+	Upsert  Upsert
 	Adapter Adapter
 	BatchSize int
 }
@@ -30,14 +31,20 @@ func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan erro
 	go func() {
 		defer close(errCh)
 
-		batch := []map[string]interface{}{}
-		batchSize := rdbs.BatchSize
+		tx, err := rdbs.DB.BeginTx(ctx, nil)
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		batch := make([]map[string]interface{}, 0, rdbs.BatchSize)
 
 		for rec := range in {
 			batch = append(batch, rec)
 
-			if len(batch) >= batchSize {
-				if err := rdbs.insertBatch(ctx, batch); err != nil {
+			if len(batch) >= rdbs.BatchSize {
+				if err := rdbs.insertBatchTx(ctx, tx, batch); err != nil {
+					tx.Rollback()
 					errCh <- err
 					return
 				}
@@ -45,13 +52,18 @@ func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan erro
 			}
 		}
 
-		// flush
+		// flush remaining
 		if len(batch) > 0 {
-			//todo retry
-			if err := rdbs.insertBatch(ctx, batch); err != nil {
+			if err := rdbs.insertBatchTx(ctx, tx, batch); err != nil {
+				tx.Rollback()
 				errCh <- err
 				return
 			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			errCh <- err
+			return
 		}
 	}()
 
@@ -59,39 +71,27 @@ func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan erro
 
 }
 
-func (rdbs *Rdbs) normalize(rec map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
+func (rdbs *Rdbs) insertBatchTx(
+	ctx context.Context,
+	tx *sql.Tx,
+	batch []map[string]interface{},
+) error {
 
-	for _, f := range rdbs.Schema.Fields {
-		val, ok := rec[f.Name]
-		if !ok || val == nil {
-			out[f.Name] = f.Default
-		} else {
-			out[f.Name] = val
-		}
-	}
+	query := rdbs.Adapter.BuildUpsertQuery(
+		rdbs.Schema,
+		rdbs.Upsert,
+		len(batch),
+	)
 
-	return out
-}
+	values := make([]interface{}, 0, len(batch)*len(rdbs.Schema.Columns))
 
-func (rdbs *Rdbs) insertBatch(ctx context.Context, batch []map[string]interface{}) error {
-
-	columns := make([]string, 0)
-	for _, f := range rdbs.Schema.Fields {
-		columns = append(columns, f.Name)
-	}
-
-	query := rdbs.Adapter.BuildInsert(rdbs.Table, columns, len(batch))
-
-	args := []interface{}{}
 	for _, rec := range batch {
-		rec = rdbs.normalize(rec)
-		for _, col := range columns {
-			args = append(args, rec[col])
+		for _, col := range rdbs.Schema.Columns {
+			values = append(values, rec[col])
 		}
 	}
 
-	_, err := rdbs.DB.ExecContext(ctx, query, args...)
+	_, err := tx.ExecContext(ctx, query, values...)
 	return err
 }
 

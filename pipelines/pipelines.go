@@ -15,7 +15,6 @@ type Pipeline[T any] struct {
 
 type PipelineRunner interface {
 	Run(ctx context.Context) error	
-	TestResult() []core.Record //only for tests porpuses
 }
 
 func (p *Pipeline[T]) Run(ctx context.Context) error {
@@ -48,16 +47,11 @@ func (p *Pipeline[T]) Run(ctx context.Context) error {
     return nil
 }
 
-//only for tests purposes
-func (p *Pipeline[T]) TestResult() []T {
-	return p.sink.(*sinks.SinkMemory[T]).Data()	
-}
-
 func BuildPipeline(configPath string) PipelineRunner{
 	config := core.LoadConfigPipeline(configPath)
 	source := factories.NewSource(config.SourceConfig).Build()
 	current := factories.NewTransform(source, config.TransformsConfig, config.AdditionalConfigs).Build()
-	sink :=factories. NewSink(config.SinkConfig, config.AdditionalConfigs).Build()
+	sink :=factories.NewSink(config.SinkConfig, config.AdditionalConfigs).Build()
 
 	return &Pipeline[core.Record]{
 		source: current,

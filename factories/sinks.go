@@ -6,6 +6,8 @@ import (
 	"conecto/core/sinks/rdbs"
 	"database/sql"
 	"fmt"
+	"strings"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Sink struct {
@@ -22,17 +24,11 @@ func NewSink(config core.SinkConfig, additionalConfigs core.AdditionalConfig) *S
 
 func (sink * Sink) Build() sinks.Sink[core.Record] {
 	switch sink.Config.Type {
-		case core.SinkMemory:
-			return sink.buildMemorySink()
 		case core.Rdbs:
 			return buildRdbs(sink.Config.RDBSConfig, sink.AdditionalConfigs)
 		default:
 			panic("unknown source type: " + sink.Config.Type)
 	}
-}
-
-func (sink *Sink) buildMemorySink() *sinks.SinkMemory[core.Record] {
-	return sinks.NewMemorySink[core.Record]()
 }
 
 func buildRdbs(config core.RDBSConfig, additionalConfigs core.AdditionalConfig) *rdbs.Rdbs {
@@ -48,28 +44,33 @@ func buildRdbs(config core.RDBSConfig, additionalConfigs core.AdditionalConfig) 
 func buildPostgres(config core.RDBSConfig, fieldsConfig core.FieldsConfig)*rdbs.Rdbs{
 	adapter := rdbs.PostgresAdapter{}
 	
-	db, err := sql.Open(adapter.DriverName(), config.DSN)
+	
+	db, err := sql.Open("pgx", config.DSN)
 	if err != nil {
 		 panic(fmt.Sprintf("cannot open connection, %s", err.Error()))
 	}
 	return &rdbs.Rdbs{
 		DB: db,
-		Table: config.Table,
-		Schema: buildSchema(fieldsConfig),
+		Schema: buildSchema(config.Table, fieldsConfig),
+		Upsert: buildUpsert(config.Upsert),
 		Adapter: &adapter,
 		BatchSize: config.BatchSize,
 	}
-
 }
 
-func buildSchema(fieldsConfig core.FieldsConfig) rdbs.Schema {
-	fields := []rdbs.Field{}
-	for name,cfg := range fieldsConfig {
-		field := rdbs.Field {
-			Name: name,
-			Default: cfg.Default,
-		}
-		fields = append(fields, field)
+func buildSchema(tableName string, fieldsConfig core.FieldsConfig) rdbs.Schema {
+	columns := []string{}
+	for name, _ := range fieldsConfig {		
+		columns = append(columns, name)
 	}
-	return rdbs.Schema{Fields: fields}
+	return rdbs.Schema{
+		Table: tableName,
+		Columns: columns,
+	}
+}
+
+func buildUpsert(upsertConfig string)rdbs.Upsert {
+	return rdbs.Upsert{
+		ConflictColumns: strings.Split(upsertConfig, ","),
+	}
 }

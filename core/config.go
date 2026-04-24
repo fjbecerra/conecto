@@ -69,6 +69,7 @@ type RDBSConfig struct {
     Table 	string  `json:"table"`
 	BatchSize int `json:"batch_size"`
 	Schema string `json:"schema"`
+	Upsert string `json:"upsert"`
 }
 
 type SinkConfig struct {

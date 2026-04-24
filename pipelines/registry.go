@@ -10,10 +10,12 @@ func NewRegistryPipeline() *Registry[PipelineFactory] {
             "fbAdInsight": func() PipelineRunner {
                 return BuildPipeline("../config/facebook_ad_insight_pipeline.json")
             },
-             "mockedFbAdInsight": func() PipelineRunner {
-                return BuildPipeline("./testdata/fb_ad_insights/ad_insight_pipeline.json")
+             "pokeApi": func() PipelineRunner {
+                return BuildPipeline("./testdata/poke_api/poke_api_pipeline.json")
             },
         },
     }
 }
+
+
 

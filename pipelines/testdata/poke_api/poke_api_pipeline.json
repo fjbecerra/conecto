@@ -2,23 +2,16 @@
   "source" : {
     "type" : "rest",
     "rest" :{
-      "base_url": "xxx",
-      "authentication" : {
-        "type" : "query",
-        "paramName" : "access_token"
-      },
+      "base_url": "https://pokeapi.co/api/v2/pokemon?offset=1345&limit=4",
       "data": {
-        "path" : "data",
+        "path" : "results",
         "is_array": true      
       },  
       "pagination": {
         "type": "cursor",
-        "request": {
-          "param": "after"
-        },
         "response": {
           "next": {
-            "path": "paging.cursors.after"
+            "path": "next"
           }
         }
       }
@@ -37,19 +30,17 @@
     "type" : "rdbs",
     "rdbs" : {
         "db_type" : "postgres",
-        "dsn" : "",
-        "table" : "",
+        "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable",
+        "table" : "pokemon",
         "schema" : "fields_config",
-        "upsert" : "tenantid,date",
         "batch_size" : 10
     } 
   },
 
   "additional_configs": {
     "fields_config" : {
-      "spend": { "path": "spend", "type": "float","required" : false, "default": 0 },
-      "clicks": { "path": "clicks", "type": "int", "required" : false, "default": 0 },
-      "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 }
+      "name": { "path": "name", "type": "string","required" : false, "default": "" },
+      "url": { "path": "url", "type": "string", "required" : false, "default": "" }
     }
   }
 
