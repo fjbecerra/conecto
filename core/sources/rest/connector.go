@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 type Connector struct {
@@ -11,7 +12,7 @@ type Connector struct {
 
 func (c *Connector) Fetch(ctx context.Context) (<-chan json.RawMessage, <-chan error) {
 
-	out := make(chan json.RawMessage, 100)
+	out := make(chan json.RawMessage)
 	errCh := make(chan error, 1)
 
 	go func() {
@@ -42,6 +43,7 @@ func (c *Connector) Fetch(ctx context.Context) (<-chan json.RawMessage, <-chan e
 
 			cursor = page.NextCursor
 		}
+		fmt.Println("source done, closing channel")
 	}()
 
 	return out, errCh

@@ -27,6 +27,7 @@ type Rdbs struct {
 
 
 func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan error {
+	fmt.Println("SINK: started")
 	errCh := make(chan error, 1)
 
 	go func() {
@@ -51,7 +52,8 @@ func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan erro
 				}
 				batch = batch[:0]
 			}
-		}
+		}		
+		fmt.Println("SINK: finished reading input channel")
 
 		// flush remaining
 		if len(batch) > 0 {
@@ -61,11 +63,14 @@ func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan erro
 				return
 			}
 		}
-
+		
+		fmt.Println("SINK: committing transaction")
 		if err := tx.Commit(); err != nil {
 			errCh <- err
 			return
 		}
+		fmt.Println("SINK: commit done")
+		
 	}()
 
 	return errCh
@@ -83,8 +88,6 @@ func (rdbs *Rdbs) insertBatchTx(
 		rdbs.Upsert,
 		len(batch),
 	)
-
-	fmt.Println(query)
 
 	values := make([]interface{}, 0, len(batch)*len(rdbs.Schema.Columns))
 

@@ -34,7 +34,7 @@ func (sink * Sink) Build() sinks.Sink[core.Record] {
 func buildRdbs(config core.RDBSConfig, additionalConfigs core.AdditionalConfig) *rdbs.Rdbs {
 	switch config.DBType {
 		case core.Postgres:
-			return buildPostgres(config, additionalConfigs[config.Schema])
+			return buildPostgres(config, additionalConfigs.FieldsConfig[config.Schema])
 		default:
 			panic("unkown rdbs type: " + config.DBType)
 	}

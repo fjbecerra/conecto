@@ -6,6 +6,7 @@ import (
 	"conecto/factories"
 	"context"
 	"testing"
+	"time"
 )
 
 func TestMockedFbAdInsightPipeline(t *testing.T) {
@@ -33,13 +34,14 @@ func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 	if error != nil {
 		t.Error(error.Error())
 	}
+    time.Sleep(10 * time.Second)
 }
 
 
 func BuildPipelineTest(configPath string ,sink *sinks.SinkMemory) PipelineRunner{
 	config := core.LoadConfigPipeline(configPath)
     source := factories.NewSource(config.SourceConfig).Build()
-	current := factories.NewTransform(source, config.TransformsConfig, config.AdditionalConfigs).Build()
+	current := factories.NewTransform(source, config.TransformsConfig, config.AdditionalConfig).Build()
 	return &Pipeline[core.Record]{
 		source: current,
 		sink:   sink,

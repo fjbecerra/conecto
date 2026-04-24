@@ -77,13 +77,25 @@ type FieldsConfig map[string]struct{
 	Required bool		`json:"required"`
 }
 
-type AdditionalConfig map[string]FieldsConfig 
+type RetryConfig struct {
+	Enabled    bool `json:"enabled"`
+	MaxRetries int  `json:"max_retries"`
+	BackoffMS  int  `json:"backoff_ms"`
+}
+
+type AdditionalConfigRawMessage map[string]json.RawMessage
+
+type AdditionalConfig struct{
+	RetryConfig RetryConfig `json:"retry"`
+	FieldsConfig map[string]FieldsConfig `json:"fields_configs"`
+}
+
 
 type ConfigPipeline struct {
 	SourceConfig SourceConfig `json:"source"`
 	TransformsConfig []TransformConfig `json:"transforms"`
 	SinkConfig SinkConfig `json:"sink"`
-	AdditionalConfigs AdditionalConfig `json:"additional_configs"`
+	AdditionalConfig AdditionalConfig `json:"additional_configs"`
 }
 
 func LoadConfigPipeline(path string) ConfigPipeline{
@@ -97,5 +109,6 @@ func LoadConfigPipeline(path string) ConfigPipeline{
     if err != nil {
         panic(err)
     }
+		
     return config
 }
