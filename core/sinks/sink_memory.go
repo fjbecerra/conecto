@@ -19,11 +19,13 @@ func NewMemorySink(mstore *[]core.Record) *SinkMemory{
     }
 }
 
-func (m *SinkMemory) Write(ctx context.Context, in <-chan core.Record) <- chan error {
+func (m *SinkMemory) Write(ctx context.Context, in <-chan core.Record) (<-chan error, <-chan struct{}) {
     errCh := make(chan error, 1)
+    doneCh := make(chan struct{})
 
     go func() {
         defer close(errCh)
+        defer close(doneCh)
 
         for record := range in {
             m.mu.Lock()
@@ -32,5 +34,5 @@ func (m *SinkMemory) Write(ctx context.Context, in <-chan core.Record) <- chan e
         }
     }()
 
-    return errCh
+    return errCh,doneCh
 }

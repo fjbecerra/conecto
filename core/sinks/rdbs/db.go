@@ -26,12 +26,16 @@ type Rdbs struct {
 }
 
 
-func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan error {
+func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) (<-chan error, <-chan struct{}) {
 	fmt.Println("SINK: started")
 	errCh := make(chan error, 1)
+	doneCh := make(chan struct{})
+
 
 	go func() {
 		defer close(errCh)
+		defer close(doneCh)
+
 
 		tx, err := rdbs.DB.BeginTx(ctx, nil)
 		if err != nil {
@@ -73,7 +77,7 @@ func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) <- chan erro
 		
 	}()
 
-	return errCh
+	return errCh,doneCh
 
 }
 

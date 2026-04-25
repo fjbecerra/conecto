@@ -34,7 +34,6 @@ func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 	if error != nil {
 		t.Error(error.Error())
 	}
-    time.Sleep(10 * time.Second)
 }
 
 

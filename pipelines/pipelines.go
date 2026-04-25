@@ -16,33 +16,36 @@ type Pipeline[T any] struct {
 
 func (p *Pipeline[T]) Run(ctx context.Context) error {
 
-    out, errCh1 := p.source.Fetch(ctx)
-    errCh2 := p.sink.Write(ctx, out)
+    out, srcErr := p.source.Fetch(ctx)
+    sinkErr,done := p.sink.Write(ctx, out)
 
-    for errCh1 != nil || errCh2 != nil {
+    for srcErr != nil || sinkErr != nil || done !=nil {
         select {
-        case err, ok := <-errCh1:
-            if !ok {
-                fmt.Println("PIPELINE: source errCh closed")
-                errCh1 = nil
-                continue
-            }
-            if err != nil {
-                fmt.Println("PIPELINE: source error:", err)
-                return err
-            }
+            case err, ok := <-srcErr:
+                if !ok {
+                    fmt.Println("PIPELINE: source errCh closed")
+                    srcErr = nil
+                    continue
+                }
+                if err != nil {
+                    fmt.Println("PIPELINE: source error:", err)
+                    return err
+                }
 
-        case err, ok := <-errCh2:
-            if !ok {
-                fmt.Println("PIPELINE: sink errCh closed")
-                errCh2 = nil
-                continue
-            }
-            if err != nil {
-                fmt.Println("PIPELINE: sink error:", err)
-                return err
-            }
+            case err, ok := <-sinkErr:
+                if !ok {
+                    fmt.Println("PIPELINE: sink errCh closed")
+                    sinkErr = nil
+                    continue
+                }
+                if err != nil {
+                    fmt.Println("PIPELINE: sink error:", err)
+                    return err
+                }
+            case <- done:
+                done = nil
         }
+            
     }
 
     return nil
