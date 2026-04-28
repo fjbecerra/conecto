@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-    "time"
     "conecto/core"
 )
 
@@ -20,17 +19,7 @@ func NewRegistryPipeline() *Registry[PipelineFactory] {
 func BuildFactory(configPath string) PipelineFactory {
 	return func() PipelineRunner {
         config := core.LoadConfigPipeline(configPath)
-		p := BuildPipeline(config)
-
-		if !config.AdditionalConfig.RetryConfig.Enabled {
-			return p
-		}
-
-		return &RetryRunner{
-			inner:      p,
-			maxRetries: config.AdditionalConfig.RetryConfig.MaxRetries,
-			backoff:    time.Duration(config.AdditionalConfig.RetryConfig.BackoffMS) * time.Millisecond,
-		}
+		return BuildPipeline(config)
 	}
 }
 

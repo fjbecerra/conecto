@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type SourceConfig struct{
+type ConnectorConfig struct{
 	Type SourceType `json:"type"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
@@ -46,10 +46,9 @@ type MockedRestConfig struct{
 	BaseRestConfig
 }
 
-type TransformConfig struct {
-	Type TransformType `json:"type"`
+type TransformerConfig struct {
+	Type TransformerType `json:"type"`
 	ExtractorConfig *ExtractorConfig `json:"extractor,omitempty"`
-	Workers int `json:"workers"`
 }
 
 type ExtractorConfig struct {	
@@ -60,7 +59,6 @@ type RDBSConfig struct {
 	DBType RdbsType `json:"db_type"` // postgres, mysql, bigquery
 	DSN    string `json:"dsn"`
     Table 	string  `json:"table"`
-	BatchSize int `json:"batch_size"`
 	Schema string `json:"schema"`
 	Upsert string `json:"upsert"`
 }
@@ -68,6 +66,8 @@ type RDBSConfig struct {
 type SinkConfig struct {
 	Type  SinkType `json:"type"`
 	RDBSConfig RDBSConfig `json:"rdbs"`
+	BatchSize int `json:"batch_size"`
+
 }
 
 type FieldsConfig map[string]struct{
@@ -92,8 +92,8 @@ type AdditionalConfig struct{
 
 
 type ConfigPipeline struct {
-	SourceConfig SourceConfig `json:"source"`
-	TransformsConfig []TransformConfig `json:"transforms"`
+	ConnectorConfig ConnectorConfig `json:"connector"`
+	TransformersConfig []TransformerConfig `json:"transformers"`
 	SinkConfig SinkConfig `json:"sink"`
 	AdditionalConfig AdditionalConfig `json:"additional_configs"`
 }

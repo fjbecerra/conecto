@@ -2,63 +2,68 @@ package pipelines
 
 import (
 	"conecto/core"
-	"conecto/core/sinks"
-	"conecto/core/sources"
+	"conecto/core/engines"
+	"conecto/core/transformers"
 	"conecto/factories"
 	"context"
-	"fmt"
 )
 
-type Pipeline[T any] struct {
-    source sources.Source[T]
-    sink   sinks.Sink[T]
+type Pipeline struct {
+	connectorEngine * engines.ConnectorEngine
+	sinkEngine * engines.SinkEngine
+	transformer transformers.Transformer
+	bufferSize int
 }
 
-func (p *Pipeline[T]) Run(ctx context.Context) error {
+func (p *Pipeline) Run(ctx context.Context) error {
 
-    out, srcErr := p.source.Fetch(ctx)
-    sinkErr,done := p.sink.Write(ctx, out)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-    for srcErr != nil || sinkErr != nil || done !=nil {
-        select {
-            case err, ok := <-srcErr:
-                if !ok {
-                    fmt.Println("PIPELINE: source errCh closed")
-                    srcErr = nil
-                    continue
-                }
-                if err != nil {
-                    fmt.Println("PIPELINE: source error:", err)
-                    return err
-                }
+	events := make(chan core.Event, p.bufferSize)
+	errCh := make(chan error, 1)
+	doneCh := make(chan struct{}) 
 
-            case err, ok := <-sinkErr:
-                if !ok {
-                    fmt.Println("PIPELINE: sink errCh closed")
-                    sinkErr = nil
-                    continue
-                }
-                if err != nil {
-                    fmt.Println("PIPELINE: sink error:", err)
-                    return err
-                }
-            case <- done:
-                done = nil
-        }
-            
-    }
 
-    return nil
+	// SOURCE
+	go func() {
+		defer close(events)
+
+		if err := p.connectorEngine.Run(ctx, nil, events); err != nil {
+			errCh <- err
+			cancel()
+		}
+	}()
+
+	// SINK
+	go func() {
+		defer close(doneCh)
+		if err := p.sinkEngine.Run(ctx, events, p.transformer); err != nil {
+			errCh <- err
+			cancel()
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-doneCh: 
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func BuildPipeline(config core.ConfigPipeline) PipelineRunner{	
-	source := factories.NewSource(config.SourceConfig).Build()
-	current := factories.NewTransform(source, config.TransformsConfig, config.AdditionalConfig).Build()
+	connector := factories.NewConnector(config.ConnectorConfig).Build()
+	transform := factories.NewTransform(config.TransformersConfig, config.AdditionalConfig).Build()
 	sink :=factories.NewSink(config.SinkConfig, config.AdditionalConfig).Build()
 
-	return &Pipeline[core.Record]{
-		source: current,
-		sink:   sink,
+	return &Pipeline{
+		connectorEngine: &connector,
+		sinkEngine:   &sink,
+        transformer: transform,
+        bufferSize: 10,
 	}
 }
 type PipelineRunner interface {

@@ -1,5 +1,5 @@
 {
-  "source" : {
+  "connector" : {
     "type" : "rest",
     "rest" :{
       "base_url": "xxx",
@@ -24,7 +24,7 @@
       }
     }
   },
-  "transforms" : [
+  "transformers" : [
     { 
       "type":"extractor",
       "extractor": { 
@@ -35,13 +35,14 @@
   ],
   "sink" : {
     "type" : "rdbs",
+    "batch_size" : 10,
     "rdbs" : {
         "db_type" : "postgres",
         "dsn" : "",
         "table" : "",
         "schema" : "fields_config",
-        "upsert" : "product_id,date_start",
-        "batch_size" : 10
+        "upsert" : "product_id,date_start"
+       
     } 
   },
 

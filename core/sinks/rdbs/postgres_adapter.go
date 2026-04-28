@@ -1,11 +1,13 @@
 package rdbs
 
 import (
+	"conecto/core/sinks/codecs"
 	"fmt"
 	"strings"
 )
 
 type PostgresAdapter struct{
+	Codec codecs.Codec
 }
 
 func (a *PostgresAdapter) BuildUpsertQuery(schema Schema, upsert Upsert ,batchSize int) string {
@@ -38,4 +40,8 @@ func (a *PostgresAdapter) BuildUpsertQuery(schema Schema, upsert Upsert ,batchSi
 		strings.Join(upsert.ConflictColumns, ","),
 		strings.Join(updates, ","),
 	)
+}
+
+func (a *PostgresAdapter) Decode(b []byte) (map[string]interface{}, error) {
+	return a.Codec.Decode(b)
 }

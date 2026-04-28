@@ -2,19 +2,26 @@ package pipelines
 
 import (
 	"conecto/core"
+	"conecto/core/engines"
 	"conecto/core/sinks"
+	"conecto/core/sinks/codecs"
+	"conecto/core/sinks/rdbs"
 	"conecto/factories"
 	"context"
 	"testing"
-	"time"
 )
 
 func TestMockedFbAdInsightPipeline(t *testing.T) {
-	store := []core.Record{}
-	sinkMemory := sinks.NewMemorySink(&store)
+	store := []map[string]interface{}{}
+	codec:= codecs.JSONCodec{}
+	adapter := rdbs.PostgresAdapter{Codec: &codec}
+	sinkMemory := sinks.NewMemorySink(&store, &adapter)
 	pipeline := BuildPipelineTest("./testdata/fb_ad_insights/ad_insight_pipeline.json",sinkMemory)
 	ctx :=context.Background()
-	pipeline.Run(ctx)
+	error:= pipeline.Run(ctx)
+	if error != nil {
+		t.Error(error.Error())
+	}
 	if len(store) != 4 {
 		t.Errorf("number of record expected is 4, returned: %d", len(store))
 	}
@@ -37,12 +44,18 @@ func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 }
 
 
-func BuildPipelineTest(configPath string ,sink *sinks.SinkMemory) PipelineRunner{
+func BuildPipelineTest(configPath string ,sinkMemory *sinks.SinkMemory) PipelineRunner{
 	config := core.LoadConfigPipeline(configPath)
-    source := factories.NewSource(config.SourceConfig).Build()
-	current := factories.NewTransform(source, config.TransformsConfig, config.AdditionalConfig).Build()
-	return &Pipeline[core.Record]{
-		source: current,
-		sink:   sink,
+    connector := factories.NewConnector(config.ConnectorConfig).Build()
+	tranformer := factories.NewTransform(config.TransformersConfig, config.AdditionalConfig).Build()
+	sink := engines.SinkEngine {
+		Sink: sinkMemory,
+		BatchSize: 10,
+	}
+	return &Pipeline{
+		connectorEngine: &connector,
+		sinkEngine:   &sink,
+		transformer: tranformer,
+		bufferSize: 10,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
-
 	"github.com/tidwall/gjson"
 )
 
@@ -16,7 +15,7 @@ type PaginationProvider struct {
 	RequestParam string
 }
 
-func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *Cursor) (Page[json.RawMessage], error) {
+func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *PageCursor) (Page[json.RawMessage], error) {
 
 	var u, _ = url.Parse(p.BaseUrl)
 	q := u.Query()
@@ -38,9 +37,9 @@ func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *Cursor) (Pag
 	// extract next cursor
 	next := gjson.GetBytes(body, p.ResponseNextPath).String()
 
-	var nextCursor *Cursor
+	var nextCursor *PageCursor
 	if next != "" {
-		nextCursor = &Cursor{Value: next}
+		nextCursor = &PageCursor{Value: next}
 	}
 
 	res := gjson.GetBytes(body, p.DataPath)

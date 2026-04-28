@@ -1,5 +1,5 @@
 {
-  "source" : {
+  "connector" : {
     "type" : "mocked_rest",
     "mocked_rest":{
       "data": {
@@ -23,24 +23,23 @@
       ]
     }
   },
-  "transforms" : [
+  "transformers" : [
     { 
       "type":"extractor", 
       "extractor":{
         "fields": "default"
-      },
-      "workers" : 5
+      }
     }
   ],
   "sink" : {
     "type" : "rdbs",
+    "batch_size" : 10,
     "rdbs" : {
         "db_type" : "postgres",
         "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable",
         "table" : "FB_AD_INSIGHTS_PRODUCT",
         "schema" : "default",
-        "upsert" : "product_id,date_start",
-        "batch_size" : 10
+        "upsert" : "product_id,date_start"        
     } 
   },
   "additional_configs": {

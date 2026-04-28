@@ -2,34 +2,41 @@ package factories
 
 import (
 	"conecto/core"
-	"conecto/core/sources/rest"
+	"conecto/core/connectors/rest"
+	"conecto/core/connectors"
+	"conecto/core/engines"
 	"conecto/testutils"
 	"net/http"
 	"os"
 )
 
-type Source struct {
-	Config core.SourceConfig
+type Connector struct {
+	Config core.ConnectorConfig
 }
 
-func NewSource(config core.SourceConfig) *Source{
-	return &Source{
+func NewConnector(config core.ConnectorConfig) *Connector{
+	return &Connector{
 		Config: config,
 	}
 }
 
-func (source *Source)Build() any {
-	switch source.Config.Type {
+func (c *Connector)Build() engines.ConnectorEngine {
+	var connector connectors.Connector
+	switch c.Config.Type {
 	case core.SourceRest:
-		return buildRest(*source.Config.RestConfig)
+		connector = buildRest(*c.Config.RestConfig)
 	case core.SourceMockedRest:
-		return buildMockedRest(*source.Config.MockedRestConfig)
+		connector = buildMockedRest(*c.Config.MockedRestConfig)
 	default:
-		panic("unknown source type: " + source.Config.Type)
+		panic("unknown source type: " + c.Config.Type)
 	}
+	return engines.ConnectorEngine{
+		Connector: connector,
+	}
+
 }
 
-func buildRest(config core.RestConfig) *rest.Connector {
+func buildRest(config core.RestConfig) *rest.RESTConnector {
 	var tokenProvider rest.TokenProvider
 	switch config.Authentication.Type {
 		case "query":
@@ -48,12 +55,12 @@ func buildRest(config core.RestConfig) *rest.Connector {
 		RequestParam: config.BaseRestConfig.Pagination.Request.Param,
 	}
 
-	return &rest.Connector {
+	return &rest.RESTConnector {
 			Provider: &paginationProvider,
 	}	
 }
 
-func buildMockedRest(config core.MockedRestConfig) *rest.Connector{
+func buildMockedRest(config core.MockedRestConfig) *rest.RESTConnector{
 	mockedPaths := map[int]string{}
 	for i, path := range config.ResponsePaths {
 		json,_ := os.ReadFile(path)
@@ -69,7 +76,7 @@ func buildMockedRest(config core.MockedRestConfig) *rest.Connector{
 		RequestParam: config.BaseRestConfig.Pagination.Request.Param,
 	}
 
-	return &rest.Connector {
+	return &rest.RESTConnector {
 			Provider: &paginationProvider,
 	}
 }

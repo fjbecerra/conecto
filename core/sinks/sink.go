@@ -1,9 +1,13 @@
 package sinks
 
 import (
+	"conecto/core"
 	"context"
 )
 
-type Sink [IN any] interface {
-    Write(ctx context.Context, in <-chan IN) (<-chan error, <-chan struct{})
+type Sink interface {
+    Open(ctx context.Context) error
+	Close() error
+	WriteBatch(ctx context.Context, batch []core.Event) error
+	Commit(ctx context.Context, cursor core.Cursor) error
 }

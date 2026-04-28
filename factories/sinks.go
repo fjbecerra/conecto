@@ -2,11 +2,14 @@ package factories
 
 import (
 	"conecto/core"
+	"conecto/core/engines"
 	"conecto/core/sinks"
+	"conecto/core/sinks/codecs"
 	"conecto/core/sinks/rdbs"
 	"database/sql"
 	"fmt"
 	"strings"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -22,12 +25,17 @@ func NewSink(config core.SinkConfig, additionalConfigs core.AdditionalConfig) *S
 	}
 }
 
-func (sink * Sink) Build() sinks.Sink[core.Record] {
-	switch sink.Config.Type {
+func (s * Sink) Build() engines.SinkEngine {
+	var sink  sinks.Sink
+	switch s.Config.Type {
 		case core.Rdbs:
-			return buildRdbs(sink.Config.RDBSConfig, sink.AdditionalConfigs)
+			sink = buildRdbs(s.Config.RDBSConfig, s.AdditionalConfigs)
 		default:
-			panic("unknown source type: " + sink.Config.Type)
+			panic("unknown source type: " + s.Config.Type)
+	}
+	return engines.SinkEngine{
+		Sink: sink,
+		BatchSize: s.Config.BatchSize,
 	}
 }
 
@@ -42,8 +50,8 @@ func buildRdbs(config core.RDBSConfig, additionalConfigs core.AdditionalConfig) 
 }
 
 func buildPostgres(config core.RDBSConfig, fieldsConfig core.FieldsConfig)*rdbs.Rdbs{
-	adapter := rdbs.PostgresAdapter{}
-	
+	jsonCodec := codecs.JSONCodec{}
+	adapter := rdbs.PostgresAdapter{Codec: &jsonCodec}
 	
 	db, err := sql.Open("pgx", config.DSN)
 	if err != nil {
@@ -54,7 +62,6 @@ func buildPostgres(config core.RDBSConfig, fieldsConfig core.FieldsConfig)*rdbs.
 		Schema: buildSchema(config.Table, fieldsConfig),
 		Upsert: buildUpsert(config.Upsert),
 		Adapter: &adapter,
-		BatchSize: config.BatchSize,
 	}
 }
 

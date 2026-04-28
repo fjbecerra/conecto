@@ -1,6 +1,14 @@
 package core
 
-type Record map[string]interface{}
+type Event struct {
+	Payload []byte
+	Cursor  Cursor
+}
+
+type Batch struct {
+	Events []Event
+	Cursor Cursor
+}
 
 
 type SourceType string
@@ -9,9 +17,9 @@ const (
 	SourceMockedRest SourceType = "mocked_rest"
 )
 
-type TransformType string
+type TransformerType string
 const (
-	TransformExtractor TransformType = "extractor"
+	TransformerExtractor TransformerType = "extractor"
 )
 
 type SinkType string

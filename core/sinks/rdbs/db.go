@@ -22,63 +22,46 @@ type Rdbs struct {
 	Schema  Schema
 	Upsert  Upsert
 	Adapter Adapter
-	BatchSize int
 }
 
 
-func (rdbs *Rdbs) Write(ctx context.Context, in <-chan core.Record) (<-chan error, <-chan struct{}) {
-	fmt.Println("SINK: started")
-	errCh := make(chan error, 1)
-	doneCh := make(chan struct{})
+func (rdbs *Rdbs) WriteBatch(ctx context.Context, batch [] core.Event) error {
+	fmt.Println("SINK: writing batch size =", len(batch))
 
+	tx, err := rdbs.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
 
-	go func() {
-		defer close(errCh)
-		defer close(doneCh)
+	rows := make([]map[string]interface{}, 0, len(batch))
 
+	for _, ev := range batch {
 
-		tx, err := rdbs.DB.BeginTx(ctx, nil)
+		rec, err := rdbs.Adapter.Decode(ev.Payload)
 		if err != nil {
-			errCh <- err
-			return
+			tx.Rollback()
+			return err
 		}
 
-		batch := make([]map[string]interface{}, 0, rdbs.BatchSize)
+		rows = append(rows, rec)
+	}
 
-		for rec := range in {
-			batch = append(batch, rec)
+	if err := rdbs.insertBatchTx(ctx, tx, rows); err != nil {
+		tx.Rollback()
+		return err
+	}
 
-			if len(batch) >= rdbs.BatchSize {
-				if err := rdbs.insertBatchTx(ctx, tx, batch); err != nil {
-					tx.Rollback()
-					errCh <- err
-					return
-				}
-				batch = batch[:0]
-			}
-		}		
-		fmt.Println("SINK: finished reading input channel")
+	return tx.Commit()
+}
 
-		// flush remaining
-		if len(batch) > 0 {
-			if err := rdbs.insertBatchTx(ctx, tx, batch); err != nil {
-				tx.Rollback()
-				errCh <- err
-				return
-			}
-		}
-		
-		fmt.Println("SINK: committing transaction")
-		if err := tx.Commit(); err != nil {
-			errCh <- err
-			return
-		}
-		fmt.Println("SINK: commit done")
-		
-	}()
+func (p *Rdbs) Commit(
+	ctx context.Context,
+	cursor core.Cursor,
+) error {
 
-	return errCh,doneCh
-
+	// checkpoint store (future DB table)
+	fmt.Println("checkpoint:", cursor)
+	return nil
 }
 
 func (rdbs *Rdbs) insertBatchTx(
@@ -103,6 +86,16 @@ func (rdbs *Rdbs) insertBatchTx(
 
 	_, err := tx.ExecContext(ctx, query, values...)
 	return err
+}
+
+func (r *Rdbs) Open(ctx context.Context) error {
+	fmt.Println("SINK: open")
+	return nil
+}
+
+func (r *Rdbs) Close() error {
+	fmt.Println("SINK: close")
+	return nil
 }
 
 

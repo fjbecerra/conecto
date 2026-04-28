@@ -1,12 +1,12 @@
 package rest
 
-type Cursor struct {
+type PageCursor struct {
 	Value string
 }
 
 type Page[T any] struct {
 	Data       []T
-	NextCursor *Cursor
+	NextCursor *PageCursor
 	HasMore    bool
 }
 
