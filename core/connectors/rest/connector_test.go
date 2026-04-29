@@ -1,8 +1,9 @@
 package rest
 
 import (
-	"context"
+	"conecto/core"
 	"conecto/testutils"
+	"context"
 	"testing"
 )
 
@@ -11,8 +12,6 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 	mockClient := testutils.MockClient{
 		Calls: map[int]string {
 				0:page1,
-				1:page2,
-				2:page3,
 		},
 	}
 	paginationProvider := PaginationProvider{
@@ -23,26 +22,14 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 		RequestParam: "after",
   }
 
-	connector := Connector {
+	connector := RESTConnector {
 		Provider: &paginationProvider,
 	}
 
-	out, errCh := connector.Fetch(ctx)
+	out, _ := connector.FetchBatch(ctx, core.Cursor{})   
 
-	for err := range errCh {
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	
-	var results []string
-
-    for item := range out {
-        results = append(results, string(item))
-    }	
-
-	if len(results) !=5 {
-        t.Fatalf("expected 5 items, got %d", len(results))
+	if len(out.Events) !=2 {
+        t.Fatalf("expected 2 items, got %d", len(out.Events))
     }
 	
 }

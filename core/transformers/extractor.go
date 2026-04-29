@@ -4,6 +4,7 @@ import (
 	"conecto/core"
 	"context"
 	"encoding/json"
+	"errors"
 )
 
 type Fields map[string]struct{
@@ -21,7 +22,15 @@ type Extractor struct {
 func (e *Extractor) Transform(ctx context.Context, batch []core.Event) ([]core.Event, error) {
     out := make([]core.Event, 0, len(batch))
 
-	for _, ev := range batch {
+	if len(batch) == 0{
+		return nil, errors.New("no batch to process.")
+	}
+
+	if(len(e.Fields) == 0) {
+		return nil, errors.New("no fields specs found.")
+	}
+
+	for _, ev := range batch {		
 
 		newObj := make(map[string]any)
 
