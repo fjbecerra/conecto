@@ -4,6 +4,7 @@ import (
 	"conecto/core"
 	"conecto/core/connectors"
 	"context"
+	"math/rand/v2"
 	"time"
 )
 
@@ -11,6 +12,8 @@ type ConnectorEngine struct {
 	Connector connectors.Connector
 	MaxRetries int
 	Backoff    time.Duration
+	MaxBackoff time.Duration
+	Rand 	   *rand.Rand
 }
 
 func (e *ConnectorEngine) Run(
@@ -32,21 +35,28 @@ func (e *ConnectorEngine) Run(
 		var err error
 
 		for i := 0; i <= e.MaxRetries; i++ {
+
 			batch, err = e.Connector.FetchBatch(ctx, current)
 			if err == nil {
 				break
 			}
-			time.Sleep(e.Backoff * time.Duration(1<<i))
-		}
 
-		if err != nil {
-			return err
+			if i == e.MaxRetries {
+				return err
+			}
+
+			delay := backoffWithJitter(e.Backoff, i, e.MaxBackoff, e.Rand)
+
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 
 		if len(batch.Events) == 0 {
 			return nil
 		}
-		
 
 		for _, ev := range batch.Events {
 			ev.Cursor = batch.Cursor
@@ -57,7 +67,7 @@ func (e *ConnectorEngine) Run(
 				return ctx.Err()
 			}
 		}
-		
+
 		if batch.Cursor == nil{
 			return nil
 		}

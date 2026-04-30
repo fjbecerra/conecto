@@ -6,13 +6,19 @@ import (
 	"conecto/core/transformers"
 	"conecto/factories"
 	"context"
+	"math/rand/v2"
+	"time"
 )
+
+type settings struct {
+	bufferSize 		int
+}
 
 type Pipeline struct {
 	connectorEngine * engines.ConnectorEngine
-	sinkEngine * engines.SinkEngine
-	transformer transformers.Transformer
-	bufferSize int
+	sinkEngine 		* engines.SinkEngine
+	transformer 	transformers.Transformer
+	settings 		settings
 }
 
 func (p *Pipeline) Run(ctx context.Context) error {
@@ -20,7 +26,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	events := make(chan core.Event, p.bufferSize)
+	events := make(chan core.Event, p.settings.bufferSize)
 	errCh := make(chan error, 1)
 	doneCh := make(chan struct{}) 
 
@@ -54,16 +60,26 @@ func (p *Pipeline) Run(ctx context.Context) error {
 	}
 }
 
-func BuildPipeline(config core.ConfigPipeline) PipelineRunner{	
-	connector := factories.NewConnector(config.ConnectorConfig).Build()
+func BuildPipeline(config core.ConfigPipeline) PipelineRunner{
+	seed := time.Now().UnixNano()
+
+	r := rand.New(rand.NewPCG(
+		uint64(seed),
+		uint64(seed>>1),
+	))
+	
+	connector := factories.NewConnector(config.ConnectorConfig, r).Build()
 	transform := factories.NewTransform(config.TransformersConfig, config.AdditionalConfig).Build()
-	sink :=factories.NewSink(config.SinkConfig, config.AdditionalConfig).Build()
+	sink :=factories.NewSink(config.SinkConfig, config.AdditionalConfig, r).Build()
+	settings := settings {
+		bufferSize: config.AdditionalConfig.BufferSize,
+	}
 
 	return &Pipeline{
 		connectorEngine: &connector,
 		sinkEngine:   &sink,
         transformer: transform,
-        bufferSize: 10,
+        settings: settings,
 	}
 }
 type PipelineRunner interface {

@@ -1,6 +1,11 @@
 {
   "connector" : {
     "type" : "mocked_rest",
+    "retry": {
+      "max_retries": 3,
+      "backoff_ms": 500,
+      "max_backoff" : 500
+    },
     "mocked_rest":{
       "data": {
         "path" : "data",
@@ -34,6 +39,11 @@
   "sink" : {
     "type" : "rdbs",
     "batch_size" : 10,
+    "retry": {
+      "max_retries": 3,
+      "backoff_ms": 500,
+      "max_backoff" : 500
+    },
     "rdbs" : {
         "db_type" : "postgres",
         "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable",
@@ -43,11 +53,7 @@
     } 
   },
   "additional_configs": {
-    "retry": {
-      "enabled": true,
-      "max_retries": 3,
-      "backoff_ms": 500
-    },
+    "event_buffer_size" : 10,
     "fields_configs" : {
       "default":{
         "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },

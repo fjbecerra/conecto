@@ -8,7 +8,9 @@ import (
 	"conecto/core/sinks/rdbs"
 	"conecto/factories"
 	"context"
+	"math/rand/v2"
 	"testing"
+	"time"
 )
 
 func TestMockedFbAdInsightPipeline(t *testing.T) {
@@ -45,8 +47,14 @@ func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 
 
 func BuildPipelineTest(configPath string ,sinkMemory *sinks.SinkMemory) PipelineRunner{
+	seed := time.Now().UnixNano()
+
+	r := rand.New(rand.NewPCG(
+		uint64(seed),
+		uint64(seed>>1),
+	))
 	config := core.LoadConfigPipeline(configPath)
-    connector := factories.NewConnector(config.ConnectorConfig).Build()
+    connector := factories.NewConnector(config.ConnectorConfig,r).Build()
 	tranformer := factories.NewTransform(config.TransformersConfig, config.AdditionalConfig).Build()
 	sink := engines.SinkEngine {
 		Sink: sinkMemory,
@@ -56,6 +64,9 @@ func BuildPipelineTest(configPath string ,sinkMemory *sinks.SinkMemory) Pipeline
 		connectorEngine: &connector,
 		sinkEngine:   &sink,
 		transformer: tranformer,
-		bufferSize: 10,
+		settings: settings{
+			bufferSize: 10,
+		},
+		
 	}
 }

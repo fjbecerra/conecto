@@ -8,7 +8,9 @@ import (
 	"conecto/core/sinks/rdbs"
 	"database/sql"
 	"fmt"
+	"math/rand/v2"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -16,12 +18,14 @@ import (
 type Sink struct {
 	Config core.SinkConfig
 	AdditionalConfigs core.AdditionalConfig
+	Rand *rand.Rand
 }
 
-func NewSink(config core.SinkConfig, additionalConfigs core.AdditionalConfig) *Sink{
+func NewSink(config core.SinkConfig, additionalConfigs core.AdditionalConfig, rand *rand.Rand) *Sink{
 	return &Sink{
 		Config: config,
 		AdditionalConfigs: additionalConfigs,
+		Rand: rand,
 	}
 }
 
@@ -36,6 +40,10 @@ func (s * Sink) Build() engines.SinkEngine {
 	return engines.SinkEngine{
 		Sink: sink,
 		BatchSize: s.Config.BatchSize,
+		MaxRetries: s.Config.Retry.MaxRetries,
+		Backoff: time.Duration(s.Config.Retry.BackoffMS),
+		MaxBackoff: time.Duration(s.Config.Retry.MaxBackoff),
+		Rand: s.Rand,
 	}
 }
 

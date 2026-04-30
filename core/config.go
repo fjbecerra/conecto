@@ -9,6 +9,7 @@ type ConnectorConfig struct{
 	Type SourceType `json:"type"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
+	Retry RetryConfig `json:"retry"`
 }
 type BaseRestConfig struct{
 	Data struct {
@@ -41,6 +42,12 @@ type RestConfig struct {
 	}`json:"authentication"`
 }
 
+type RetryConfig struct {
+	MaxRetries int  `json:"max_retries"`
+	BackoffMS  int  `json:"backoff_ms"`
+	MaxBackoff int 	`json:"max_backoff"`
+}
+
 type MockedRestConfig struct{
 	ResponsePaths []string `json:"response_paths"`
 	BaseRestConfig
@@ -67,7 +74,7 @@ type SinkConfig struct {
 	Type  SinkType `json:"type"`
 	RDBSConfig RDBSConfig `json:"rdbs"`
 	BatchSize int `json:"batch_size"`
-
+	Retry RetryConfig `json:"retry"`
 }
 
 type FieldsConfig map[string]struct{
@@ -77,17 +84,11 @@ type FieldsConfig map[string]struct{
 	Required bool		`json:"required"`
 }
 
-type RetryConfig struct {
-	Enabled    bool `json:"enabled"`
-	MaxRetries int  `json:"max_retries"`
-	BackoffMS  int  `json:"backoff_ms"`
-}
-
 type AdditionalConfigRawMessage map[string]json.RawMessage
 
 type AdditionalConfig struct{
-	RetryConfig RetryConfig `json:"retry"`
 	FieldsConfig map[string]FieldsConfig `json:"fields_configs"`
+	BufferSize int `json:"event_buffer_size"`
 }
 
 

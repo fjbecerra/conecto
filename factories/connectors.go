@@ -2,21 +2,25 @@ package factories
 
 import (
 	"conecto/core"
-	"conecto/core/connectors/rest"
 	"conecto/core/connectors"
+	"conecto/core/connectors/rest"
 	"conecto/core/engines"
 	"conecto/testutils"
+	"math/rand/v2"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Connector struct {
 	Config core.ConnectorConfig
+	Rand *rand.Rand
 }
 
-func NewConnector(config core.ConnectorConfig) *Connector{
+func NewConnector(config core.ConnectorConfig, rand *rand.Rand) *Connector{
 	return &Connector{
 		Config: config,
+		Rand: rand,
 	}
 }
 
@@ -32,6 +36,10 @@ func (c *Connector)Build() engines.ConnectorEngine {
 	}
 	return engines.ConnectorEngine{
 		Connector: connector,
+		MaxRetries: c.Config.Retry.MaxRetries,
+		Backoff: time.Duration(c.Config.Retry.BackoffMS),
+		MaxBackoff: time.Duration(c.Config.Retry.MaxBackoff),
+		Rand: c.Rand,
 	}
 
 }
