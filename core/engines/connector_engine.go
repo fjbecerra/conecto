@@ -18,16 +18,15 @@ type ConnectorEngine struct {
 
 func (e *ConnectorEngine) Run(
 	ctx context.Context,
-	state core.Cursor,
+	state core.State,
 	out chan<- core.Event,
 ) error {
+	current := state.Cursor
 
-	if err := e.Connector.Open(ctx, state); err != nil {
+	if err := e.Connector.Open(ctx, current); err != nil {
 		return err
 	}
 	defer e.Connector.Close()
-
-	current := state
 
 	for {
 

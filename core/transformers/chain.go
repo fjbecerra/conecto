@@ -9,10 +9,7 @@ type Chain struct {
 	Steps []Transformer
 }
 
-func (c *Chain) Transform(
-	ctx context.Context,
-	batch []core.Event,
-) ([]core.Event, error) {
+func (c *Chain) Transform(ctx context.Context,batch []core.Event,) ([]core.Event, error) {
 
 	var err error
 	current := batch

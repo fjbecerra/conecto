@@ -1,7 +1,6 @@
 package factories
 
 import (
-	"conecto/core"
 	"conecto/core/connectors"
 	"conecto/core/connectors/rest"
 	"conecto/core/engines"
@@ -13,11 +12,11 @@ import (
 )
 
 type Connector struct {
-	Config core.ConnectorConfig
+	Config ConnectorConfig
 	Rand *rand.Rand
 }
 
-func NewConnector(config core.ConnectorConfig, rand *rand.Rand) *Connector{
+func NewConnector(config ConnectorConfig, rand *rand.Rand) *Connector{
 	return &Connector{
 		Config: config,
 		Rand: rand,
@@ -27,9 +26,9 @@ func NewConnector(config core.ConnectorConfig, rand *rand.Rand) *Connector{
 func (c *Connector)Build() engines.ConnectorEngine {
 	var connector connectors.Connector
 	switch c.Config.Type {
-	case core.SourceRest:
+	case SourceRest:
 		connector = buildRest(*c.Config.RestConfig)
-	case core.SourceMockedRest:
+	case SourceMockedRest:
 		connector = buildMockedRest(*c.Config.MockedRestConfig)
 	default:
 		panic("unknown source type: " + c.Config.Type)
@@ -44,7 +43,7 @@ func (c *Connector)Build() engines.ConnectorEngine {
 
 }
 
-func buildRest(config core.RestConfig) *rest.RESTConnector {
+func buildRest(config RestConfig) *rest.RESTConnector {
 	var tokenProvider rest.TokenProvider
 	switch config.Authentication.Type {
 		case "query":
@@ -68,7 +67,7 @@ func buildRest(config core.RestConfig) *rest.RESTConnector {
 	}	
 }
 
-func buildMockedRest(config core.MockedRestConfig) *rest.RESTConnector{
+func buildMockedRest(config MockedRestConfig) *rest.RESTConnector{
 	mockedPaths := map[int]string{}
 	for i, path := range config.ResponsePaths {
 		json,_ := os.ReadFile(path)

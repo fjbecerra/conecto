@@ -23,10 +23,7 @@ func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *PageCursor) 
 	if cursor != nil && p.RequestParam != "" {
 		q.Set(p.RequestParam, cursor.Value)
 	}
-	// else if cursor != nil {
-	// 	u, _ = url.Parse(cursor.Value)
-	// }
-
+	
 	u.RawQuery = q.Encode()
 
 	body, err := p.Client.Fetch(ctx, u.String())

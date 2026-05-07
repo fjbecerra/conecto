@@ -1,8 +1,6 @@
-package pipelines
+package factories
 
-import (
-    "conecto/core"
-)
+import "conecto/core/engines"
 
 type Registry[T any] struct {
     Factories map[string]T
@@ -17,12 +15,11 @@ func NewRegistryPipeline() *Registry[PipelineFactory] {
 }
 
 func BuildFactory(configPath string) PipelineFactory {
-	return func() PipelineRunner {
-        config := core.LoadConfigPipeline(configPath)
+	return func() engines.PipelineRunner {
+        config := LoadConfigPipeline(configPath)
 		return BuildPipeline(config)
 	}
 }
-
 
 
 

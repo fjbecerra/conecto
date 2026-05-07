@@ -1,4 +1,4 @@
-package core
+package factories
 
 import (
 	"encoding/json"
@@ -113,3 +113,25 @@ func LoadConfigPipeline(path string) ConfigPipeline{
 		
     return config
 }
+
+type SourceType string
+const (
+	SourceRest 		 SourceType = "rest"
+	SourceMockedRest SourceType = "mocked_rest"
+)
+
+type TransformerType string
+const (
+	TransformerExtractor TransformerType = "extractor"
+)
+
+type SinkType string
+const (
+	Rdbs  SinkType = "rdbs"
+)
+
+type RdbsType string
+const (
+	Postgres RdbsType = "postgres"
+)
+

@@ -1,7 +1,6 @@
 package factories
 
 import (
-	"conecto/core"
 	"conecto/core/engines"
 	"conecto/core/sinks"
 	"conecto/core/sinks/codecs"
@@ -16,12 +15,12 @@ import (
 )
 
 type Sink struct {
-	Config core.SinkConfig
-	AdditionalConfigs core.AdditionalConfig
+	Config SinkConfig
+	AdditionalConfigs AdditionalConfig
 	Rand *rand.Rand
 }
 
-func NewSink(config core.SinkConfig, additionalConfigs core.AdditionalConfig, rand *rand.Rand) *Sink{
+func NewSink(config SinkConfig, additionalConfigs AdditionalConfig, rand *rand.Rand) *Sink{
 	return &Sink{
 		Config: config,
 		AdditionalConfigs: additionalConfigs,
@@ -32,7 +31,7 @@ func NewSink(config core.SinkConfig, additionalConfigs core.AdditionalConfig, ra
 func (s * Sink) Build() engines.SinkEngine {
 	var sink  sinks.Sink
 	switch s.Config.Type {
-		case core.Rdbs:
+		case Rdbs:
 			sink = buildRdbs(s.Config.RDBSConfig, s.AdditionalConfigs)
 		default:
 			panic("unknown source type: " + s.Config.Type)
@@ -47,9 +46,9 @@ func (s * Sink) Build() engines.SinkEngine {
 	}
 }
 
-func buildRdbs(config core.RDBSConfig, additionalConfigs core.AdditionalConfig) *rdbs.Rdbs {
+func buildRdbs(config RDBSConfig, additionalConfigs AdditionalConfig) *rdbs.Rdbs {
 	switch config.DBType {
-		case core.Postgres:
+		case Postgres:
 			return buildPostgres(config, additionalConfigs.FieldsConfig[config.Schema])
 		default:
 			panic("unkown rdbs type: " + config.DBType)
@@ -57,7 +56,7 @@ func buildRdbs(config core.RDBSConfig, additionalConfigs core.AdditionalConfig) 
 	
 }
 
-func buildPostgres(config core.RDBSConfig, fieldsConfig core.FieldsConfig)*rdbs.Rdbs{
+func buildPostgres(config RDBSConfig, fieldsConfig FieldsConfig)*rdbs.Rdbs{
 	jsonCodec := codecs.JSONCodec{}
 	adapter := rdbs.PostgresAdapter{Codec: &jsonCodec}
 	
@@ -73,7 +72,7 @@ func buildPostgres(config core.RDBSConfig, fieldsConfig core.FieldsConfig)*rdbs.
 	}
 }
 
-func buildSchema(tableName string, fieldsConfig core.FieldsConfig) rdbs.Schema {
+func buildSchema(tableName string, fieldsConfig FieldsConfig) rdbs.Schema {
 	columns := []string{}
 	for name, _ := range fieldsConfig {		
 		columns = append(columns, name)

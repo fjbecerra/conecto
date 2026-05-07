@@ -10,3 +10,10 @@ CREATE TABLE FB_AD_INSIGHTS_PRODUCT (
     CONSTRAINT metrics_product_date_unique
     UNIQUE (product_id, date_start)
 );
+
+CREATE TABLE pipeline_state (
+    pipeline_id TEXT PRIMARY KEY,
+    cursor JSONB,
+    watermark TIMESTAMP,
+    version BIGINT
+);

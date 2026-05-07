@@ -1,8 +1,11 @@
 package core
 
+import "time"
+
 type Event struct {
 	Payload []byte
 	Cursor  Cursor
+	Timestamp time.Time //to get the watermark
 }
 
 type Batch struct {
@@ -10,24 +13,8 @@ type Batch struct {
 	Cursor Cursor
 }
 
+type State struct {
+	Cursor    Cursor
+	Watermark time.Time
+}
 
-type SourceType string
-const (
-	SourceRest 		 SourceType = "rest"
-	SourceMockedRest SourceType = "mocked_rest"
-)
-
-type TransformerType string
-const (
-	TransformerExtractor TransformerType = "extractor"
-)
-
-type SinkType string
-const (
-	Rdbs  SinkType = "rdbs"
-)
-
-type RdbsType string
-const (
-	Postgres RdbsType = "postgres"
-)

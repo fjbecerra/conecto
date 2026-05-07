@@ -2,6 +2,7 @@ package engines
 
 import (
 	"conecto/core"
+	"conecto/core/checkpoint"
 	"conecto/core/sinks"
 	"conecto/core/transformers"
 	"context"
@@ -10,60 +11,55 @@ import (
 )
 
 type SinkEngine struct {
+	Committer 	checkpoint.Committer
 	Sink 		sinks.Sink
 	BatchSize 	int
 	MaxRetries 	int
 	Backoff    	time.Duration
 	MaxBackoff time.Duration
-	Rand 	   *rand.Rand
+	Rand 	   *rand.Rand	
 }
 
 func (e *SinkEngine) Run(ctx context.Context, in <-chan core.Event, transformer transformers.Transformer) error {
 
 	batch := make([]core.Event, 0, e.BatchSize)
+	state := core.State{}
 
 	for ev := range in {
 
 		batch = append(batch, ev)
+
+		if ev.Timestamp.After(state.Watermark) {
+			state.Watermark = ev.Timestamp
+		}
+		state.Cursor = ev.Cursor
+
 		if len(batch) >= e.BatchSize {
-			if err := e.processWithRetry(ctx, transformer, batch); err != nil {
+			if err := e.commitWithRetry(ctx, batch, state, transformer); err != nil {
 				return err
 			}
 			batch = batch[:0]
 		}
 	}
 
-	// flush remaining
 	if len(batch) > 0 {
-		if err := e.processWithRetry(ctx, transformer, batch); err != nil {
-			return err
-		}
+		return e.commitWithRetry(ctx, batch, state, transformer)
 	}
 
 	return nil
 
 }
 
-func (e *SinkEngine) process(
+func (e *SinkEngine) commitWithRetry(
 	ctx context.Context,
-	transformer transformers.Transformer,
 	batch []core.Event,
+	state core.State,
+	transformer transformers.Transformer,
 ) error {
-
-	out, err := transformer.Transform(ctx, batch)
-	if err != nil {
-		return err
-	}
-
-	return e.Sink.WriteBatch(ctx, out)
-}
-
-func (e *SinkEngine) processWithRetry(ctx context.Context, transformer transformers.Transformer,batch []core.Event) error {
 
 	for i := 0; i <= e.MaxRetries; i++ {
 
-		err := e.process(ctx, transformer, batch)
-
+		err := e.process(ctx, batch, state, transformer)
 		if err == nil {
 			return nil
 		}
@@ -74,7 +70,6 @@ func (e *SinkEngine) processWithRetry(ctx context.Context, transformer transform
 
 		delay := backoffWithJitter(e.Backoff, i, e.MaxBackoff, e.Rand)
 
-		// backoff with cancel support
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
@@ -83,4 +78,19 @@ func (e *SinkEngine) processWithRetry(ctx context.Context, transformer transform
 	}
 
 	return nil
+}
+
+func (e *SinkEngine) process(
+	ctx context.Context,
+	batch []core.Event,
+	state core.State,
+	transformer transformers.Transformer,
+) error {
+
+	out, err := transformer.Transform(ctx, batch)
+	if err != nil {
+		return err
+	}
+
+	return e.Committer.Commit(ctx, out, state)
 }

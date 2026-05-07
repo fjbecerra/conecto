@@ -1,17 +1,17 @@
 package factories
 
 import (
-	"conecto/core"
 	"conecto/core/transformers"
+	
 )
 
 type Transformer struct {
-	Config []core.TransformerConfig
-	AdditinalConfigs core.AdditionalConfig
+	Config []TransformerConfig
+	AdditinalConfigs AdditionalConfig
 
 }
 
-func NewTransform(config []core.TransformerConfig, additinalConfigs core.AdditionalConfig) *Transformer {
+func NewTransform(config []TransformerConfig, additinalConfigs AdditionalConfig) *Transformer {
 	return &Transformer {
 		Config: config,
 		AdditinalConfigs: additinalConfigs,
@@ -22,7 +22,7 @@ func (t * Transformer) Build() transformers.Transformer {
 	tranformers := 	[]transformers.Transformer{}
 	for _, tCfg := range t.Config {
 		switch tCfg.Type {
-			case core.TransformerExtractor : 
+			case TransformerExtractor : 
 				fieldsConfig := t.AdditinalConfigs.FieldsConfig[tCfg.ExtractorConfig.Fields]
 				tranformers = append(tranformers, buildExtractor(fieldsConfig))
 			default:
@@ -34,7 +34,7 @@ func (t * Transformer) Build() transformers.Transformer {
 	}	
 }
 
-func buildExtractor(fieldsConfig core.FieldsConfig) transformers.Transformer {
+func buildExtractor(fieldsConfig FieldsConfig) transformers.Transformer {
 	return &transformers.Extractor{
 				Fields : transformers.Fields(fieldsConfig),
 				Selector: &transformers.GJSONSelector{},
