@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"conecto/core"
-	"conecto/core/checkpoint"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -10,21 +9,51 @@ import (
 	"strings"
 )
 
+type Record map[string]interface{}
+
+
 type Schema struct {
 	Table   string
 	Columns []string
 }
 
-type PostgresCommitter struct {
-	DB         *sql.DB
-	StateStore *PostgresStateStore
+type PostgresStateStore struct {
+	DB *sql.DB
 	Schema Schema
-	PipelineID string
-	
 }
 
-func (c *PostgresCommitter) Commit(
+func (s *PostgresStateStore) Load(ctx context.Context, id string) (core.State, error) {
+	var st core.State
+	var cursorBytes []byte
+
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT cursor, watermark FROM pipeline_state WHERE pipeline_id=$1`,
+		id,
+	).Scan(&cursorBytes, &st.Watermark)
+
+	if err == sql.ErrNoRows {
+		return core.State{}, nil
+	}
+	if err != nil {
+		return core.State{}, err
+	}
+
+	json.Unmarshal(cursorBytes, &st.Cursor)
+	return st, nil
+}
+
+func (s *PostgresStateStore) Save(
 	ctx context.Context,
+	pipelineID string,
+	st core.State,
+) error {
+
+	return nil
+}
+
+func (c *PostgresStateStore) Commit(
+	ctx context.Context,
+	pipelineID string,
 	batch []core.Event,
 	state core.State,
 ) error {
@@ -39,7 +68,7 @@ func (c *PostgresCommitter) Commit(
 		return err
 	}
 
-	if err := c.saveStateTx(ctx, tx, state); err != nil {
+	if err := c.saveStateTx(ctx, pipelineID, tx, state); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -47,7 +76,7 @@ func (c *PostgresCommitter) Commit(
 	return tx.Commit()
 }
 
-func (c *PostgresCommitter) insertBatchTx(
+func (c *PostgresStateStore) insertBatchTx(
 	ctx context.Context,
 	tx *sql.Tx,
 	batch []core.Event,
@@ -94,7 +123,7 @@ func buildInsertQuery(schema Schema, batchSize int) string {
 	)
 }
 
-func evToMap(ev core.Event) (checkpoint.Record, error) {
+func evToMap(ev core.Event) (Record, error) {
 	var m map[string]interface{}
 
 	if err := json.Unmarshal(ev.Payload, &m); err != nil {
@@ -116,8 +145,9 @@ func placeholders(cols int, row int) string {
 	return strings.Join(out, ", ")
 }
 
-func (c *PostgresCommitter) saveStateTx(
+func (c *PostgresStateStore) saveStateTx(
 	ctx context.Context,
+	pipelineID string,
 	tx *sql.Tx,
 	state core.State,
 ) error {
@@ -139,7 +169,7 @@ func (c *PostgresCommitter) saveStateTx(
 			cursor = EXCLUDED.cursor,
 			watermark = EXCLUDED.watermark
 		`,
-		c.PipelineID,
+		pipelineID,
 		b,
 		state.Watermark,
 	)

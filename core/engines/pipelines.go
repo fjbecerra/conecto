@@ -2,68 +2,68 @@ package engines
 
 import (
 	"conecto/core"
-	"conecto/core/checkpoint"
+	"conecto/core/statestores"
 	"conecto/core/transformers"
 	"context"
+	"golang.org/x/sync/errgroup"
 )
 
-type Settings struct {
-	BufferSize 		int
+type Runtime struct {
+	PipelineId 		string
+	Context 		context.Context
 }
 
-type Pipeline struct {
-	ID 				string
+type Pipeline struct {	
 	ConnectorEngine * ConnectorEngine
 	SinkEngine 		* SinkEngine
 	Transformer 	transformers.Transformer
-	Settings 		Settings
-	StateStore		checkpoint.StateStore	
+	StateStore 		statestores.StateStore
 }
 
-func (p *Pipeline) Run(ctx context.Context) error {
+func (p *Pipeline) Run(runtime Runtime) error {
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	state, err := p.StateStore.Load(ctx, p.ID)
+	// CONTEXT (shared cancellation)
+	g, ctx := errgroup.WithContext(runtime.Context)
+
+	// LOAD CHECKPOINT (ONLY ONCE)
+	state, err := p.StateStore.Load(ctx, runtime.PipelineId)
 	if err != nil {
 		return err
 	}
 
-	events := make(chan core.Event, p.Settings.BufferSize)
-	errCh := make(chan error, 1)
-	doneCh := make(chan struct{}) 
+	// CHANNEL
+	batches := make(chan core.Batch)
 
+	// CONNECTOR
+	g.Go(func() error {
 
-	// SOURCE
-	go func() {
-		defer close(events)
+		defer close(batches)
 
-		if err := p.ConnectorEngine.Run(ctx, state, events); err != nil {
-			errCh <- err
-			cancel()
-		}
-	}()
+		return p.ConnectorEngine.Run(
+			ctx,
+			state,
+			batches,
+		)
+	})
 
-	// SINK
-	go func() {
-		defer close(doneCh)
-		if err := p.SinkEngine.Run(ctx, events, p.Transformer); err != nil {
-			errCh <- err
-			cancel()
-		}
-	}()
+	// SINK (owns checkpointing)
+	g.Go(func() error {
 
-	select {
-	case err := <-errCh:
-		return err
-	case <-doneCh: 
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+		return p.SinkEngine.Run(
+			Runtime{
+				Context:    ctx,
+				PipelineId: runtime.PipelineId,
+			},
+			batches,
+			p.Transformer,
+		)
+	})
+
+	// WAIT
+	return g.Wait()
 }
 
 type PipelineRunner interface {
-	Run(ctx context.Context) error	
+	Run(runtime Runtime) error	
 }
 

@@ -1,96 +1,123 @@
 package factories
 
 import (
-	"conecto/core"
-	"conecto/core/checkpoint"
-	"conecto/core/checkpoint/memory"
 	"conecto/core/engines"
 	"conecto/core/sinks"
-	"conecto/core/sinks/codecs"
-	"conecto/core/sinks/rdbs"
+	"conecto/core/statestores/memory"
 	"context"
-	"math/rand/v2"
+	"errors"
+	"sync"
+
 	"testing"
-	"time"
 )
 
-func TestMockedFbAdInsightPipeline(t *testing.T) {
-	dataStore := []map[string]interface{}{}
-	stateStore:= make(map[string]core.State)
-	stateStore["pipeline-test"] = State{
-		Cursor : core.Cursor[]
+func TestMockedFbAdInsightPipeline(t *testing.T) {	
+	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline.json")
+	pipeline:= BuildPipeline(config)
+	runtime:= engines.Runtime{
+		PipelineId: "test-pipeline",
+		Context: context.Background(),
 	}
-	pipelineTest := PipelineTest {
-		ConfigPath: "./testdata/fb_ad_insights/ad_insight_pipeline.json",
-		DataStore: dataStore,
-		StateStore: map[string]checkpoint.StateStore{
-
-		}
-
-	}
-	pipeline := BuildPipelineTest(pipelineTest)
-	ctx :=context.Background()
-	error:= pipeline.Run(ctx)
+	error:= pipeline.Run(runtime)
 	if error != nil {
 		t.Error(error.Error())
 	}
-	if len(dataStore) != 4 {
-		t.Errorf("number of record expected is 4, returned: %d", len(dataStore))
+
+	memSink := pipeline.SinkEngine.Sink.(*sinks.SinkMemory)
+	
+	if len(memSink.Mstore) != 4 {
+		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
+	}	
+}
+
+func TestPipeline_CancelAndResume(t *testing.T) {
+	
+	ctx, cancel := context.WithCancel(context.Background())
+	cfg := LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline.json")
+	pipeline := BuildPipeline(cfg)
+
+	// ACCESS IN-MEMORY COMPONENTS
+	sink := pipeline.SinkEngine.Sink.(*sinks.SinkMemory)
+	store := pipeline.StateStore.(*memory.MemoryStateStore)
+
+	// CONTROL SIGNALS
+	firstBatchDone := make(chan struct{})
+	cancelOnce := sync.Once{}
+
+	// BLOCK AFTER FIRST FLUSH
+	sink.OnWrite = func() {
+
+		cancelOnce.Do(func() {
+			close(firstBatchDone)
+		})
+	}
+
+	// RUN PIPELINE
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- pipeline.Run(engines.Runtime{
+			Context:    ctx,
+			PipelineId: "test",
+		})
+	}()
+
+	// WAIT UNTIL FIRST BATCH IS PROCESSED
+	<-firstBatchDone
+
+	// CANCEL PIPELINE
+	cancel()
+
+	err := <-errCh
+
+	if err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context canceled, got %v", err)
+	}
+
+	// VERIFY CHECKPOINT WAS SAVED
+	state, err := store.Load(context.Background(), "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if state.Cursor == nil {
+		t.Fatal("expected cursor to be persisted")
+	}
+
+	// RESTART PIPELINE
+	ctx2 := context.Background()
+
+	err = pipeline.Run(engines.Runtime{
+		Context:    ctx2,
+		PipelineId: "test",
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// VERIFY NO DUPLICATION ON RESUME
+	if len(sink.Mstore) != 4 {
+		t.Fatalf("expected 4 records, got %d", len(sink.Mstore))
 	}
 }
+
+
 
 //todo run containers when integrations tests run
 //this tests depends on postgres container. 
-func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
+// func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 
-	registry := NewRegistryPipeline()
+// 	registry := NewRegistryPipeline()
 
-   	pipeline := registry.Factories["fbAdInsight"]()
+//    	pipeline := registry.Factories["fbAdInsight"]()
 
-	ctx :=context.Background()
-	error:=pipeline.Run(ctx)
+// 	ctx :=context.Background()
+// 	error:=pipeline.Run(ctx)
 	
-	if error != nil {
-		t.Error(error.Error())
-	}
-}
+// 	if error != nil {
+// 		t.Error(error.Error())
+// 	}
+// }
 
-type PipelineTest struct {
-	ConfigPath string
-	DataStore []map[string]interface{}
-	StateStore map[string]core.State
-}
-
-func BuildPipelineTest(pipelineTest PipelineTest) engines.PipelineRunner{
-	seed := time.Now().UnixNano()
-
-	r := rand.New(rand.NewPCG(
-		uint64(seed),
-		uint64(seed>>1),
-	))
-	config := LoadConfigPipeline(pipelineTest.ConfigPath)
-    connector := NewConnector(config.ConnectorConfig,r).Build()
-	tranformer := NewTransform(config.TransformersConfig, config.AdditionalConfig).Build()
-	codec:= codecs.JSONCodec{}
-	adapter := rdbs.PostgresAdapter{Codec: &codec}
-	sinkMemory := sinks.NewMemorySink(&pipelineTest.DataStore, &adapter)
-	sink := engines.SinkEngine {
-		Sink: sinkMemory,
-		BatchSize: 10,
-	}
-
-	stateStore:= memory.MemoryStateStore{
-		Store: pipelineTest.StateStore,
-	}
-	return &engines.Pipeline{
-		ID : "pipeline-test",
-		ConnectorEngine: &connector,
-		SinkEngine:   &sink,
-		Transformer: tranformer,
-		Settings: engines.Settings{
-			BufferSize: 10,
-		},
-		StateStore: &stateStore,
-	}
-}
 

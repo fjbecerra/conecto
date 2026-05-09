@@ -19,8 +19,9 @@ type ConnectorEngine struct {
 func (e *ConnectorEngine) Run(
 	ctx context.Context,
 	state core.State,
-	out chan<- core.Event,
+	out chan<- core.Batch,
 ) error {
+
 	current := state.Cursor
 
 	if err := e.Connector.Open(ctx, current); err != nil {
@@ -33,6 +34,7 @@ func (e *ConnectorEngine) Run(
 		var batch core.Batch
 		var err error
 
+		//RETRY FETCH
 		for i := 0; i <= e.MaxRetries; i++ {
 
 			batch, err = e.Connector.FetchBatch(ctx, current)
@@ -55,19 +57,20 @@ func (e *ConnectorEngine) Run(
 
 		if len(batch.Events) == 0 {
 			return nil
+		}		
+		// EMIT BATCH (checkpoint = CURRENT)
+		select {
+		case out <- core.Batch{
+			Events: batch.Events,
+			Cursor: current,
+		}:
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 
-		for _, ev := range batch.Events {
-			ev.Cursor = batch.Cursor
-
-			select {
-			case out <- ev:
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		}
-
-		if batch.Cursor == nil{
+		
+		// ADVANCE FETCH CURSOR
+		if batch.Cursor == nil {
 			return nil
 		}
 

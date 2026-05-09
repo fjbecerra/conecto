@@ -6,7 +6,9 @@ import (
 	"time"
 )
 
-func BuildPipeline(config ConfigPipeline) engines.PipelineRunner{
+
+
+func BuildPipeline(config ConfigPipeline) engines.Pipeline{
 	seed := time.Now().UnixNano()
 
 	r := rand.New(rand.NewPCG(
@@ -16,18 +18,13 @@ func BuildPipeline(config ConfigPipeline) engines.PipelineRunner{
 	
 	connector := NewConnector(config.ConnectorConfig, r).Build()
 	transform := NewTransform(config.TransformersConfig, config.AdditionalConfig).Build()
-	sink :=NewSink(config.SinkConfig, config.AdditionalConfig, r).Build()
-	settings := engines.Settings {
-		BufferSize: config.AdditionalConfig.BufferSize,
-	}
-
-	return &engines.Pipeline{
+	stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig).Build()
+	sink :=NewSink(config.SinkConfig, config.AdditionalConfig, config.RuntimeConfig, r, stateStore).Build()
+	
+	return engines.Pipeline{
 		ConnectorEngine: &connector,
 		SinkEngine:   &sink,
         Transformer: transform,
-        Settings: settings,
+        StateStore: stateStore,
 	}
 }
-
-
-type PipelineFactory func() engines.PipelineRunner

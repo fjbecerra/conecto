@@ -1,4 +1,4 @@
-package checkpoint
+package statestores
 
 import (
 	"conecto/core"

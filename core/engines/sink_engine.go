@@ -2,64 +2,78 @@ package engines
 
 import (
 	"conecto/core"
-	"conecto/core/checkpoint"
+	"conecto/core/extractors"
 	"conecto/core/sinks"
+	"conecto/core/statestores"
 	"conecto/core/transformers"
-	"context"
 	"math/rand/v2"
 	"time"
 )
 
 type SinkEngine struct {
-	Committer 	checkpoint.Committer
 	Sink 		sinks.Sink
 	BatchSize 	int
 	MaxRetries 	int
 	Backoff    	time.Duration
 	MaxBackoff time.Duration
-	Rand 	   *rand.Rand	
+	Rand 	   *rand.Rand
+	WatermarkExtractor extractors.WatermarkExtractor
+	StateStore statestores.StateStore
 }
 
-func (e *SinkEngine) Run(ctx context.Context, in <-chan core.Event, transformer transformers.Transformer) error {
+func (e *SinkEngine) Run(
+	runtime Runtime,
+	in <-chan core.Batch,
+	transformer transformers.Transformer,
+) error {
 
-	batch := make([]core.Event, 0, e.BatchSize)
 	state := core.State{}
 
-	for ev := range in {
+	for {
 
-		batch = append(batch, ev)
+		select {
+		case <-runtime.Context.Done():
+			return runtime.Context.Err()
 
-		if ev.Timestamp.After(state.Watermark) {
-			state.Watermark = ev.Timestamp
-		}
-		state.Cursor = ev.Cursor
+		case batch, ok := <-in:
 
-		if len(batch) >= e.BatchSize {
-			if err := e.commitWithRetry(ctx, batch, state, transformer); err != nil {
+			if !ok {
+				return nil
+			}
+
+			// FLUSH
+			if err := e.flush(
+				runtime,
+				batch.Events,
+				transformer,
+			); err != nil {
 				return err
 			}
-			batch = batch[:0]
+
+			// UPDATE CHECKPOINT
+			state.Cursor = batch.Cursor
+
+			// PERSIST CHECKPOINT IMMEDIATELY
+			if err := e.StateStore.Save(
+				runtime.Context,
+				runtime.PipelineId,
+				state,
+			); err != nil {
+				return err
+			}
 		}
 	}
-
-	if len(batch) > 0 {
-		return e.commitWithRetry(ctx, batch, state, transformer)
-	}
-
-	return nil
-
 }
 
-func (e *SinkEngine) commitWithRetry(
-	ctx context.Context,
+func (e *SinkEngine) flush(
+	runtime Runtime,
 	batch []core.Event,
-	state core.State,
 	transformer transformers.Transformer,
 ) error {
 
 	for i := 0; i <= e.MaxRetries; i++ {
 
-		err := e.process(ctx, batch, state, transformer)
+		err := e.process(runtime, batch, transformer)
 		if err == nil {
 			return nil
 		}
@@ -72,8 +86,8 @@ func (e *SinkEngine) commitWithRetry(
 
 		select {
 		case <-time.After(delay):
-		case <-ctx.Done():
-			return ctx.Err()
+		case <-runtime.Context.Done():
+			return runtime.Context.Err()
 		}
 	}
 
@@ -81,16 +95,18 @@ func (e *SinkEngine) commitWithRetry(
 }
 
 func (e *SinkEngine) process(
-	ctx context.Context,
+	runtime Runtime,
 	batch []core.Event,
-	state core.State,
 	transformer transformers.Transformer,
 ) error {
 
-	out, err := transformer.Transform(ctx, batch)
+	// transform
+	transformed, err := transformer.Transform(runtime.Context, batch)
 	if err != nil {
 		return err
 	}
 
-	return e.Committer.Commit(ctx, out, state)
+	// write to sink 
+	 return e.Sink.WriteBatch(runtime.Context, transformed);	
+
 }

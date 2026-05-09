@@ -88,7 +88,21 @@ type AdditionalConfigRawMessage map[string]json.RawMessage
 
 type AdditionalConfig struct{
 	FieldsConfig map[string]FieldsConfig `json:"fields_configs"`
-	BufferSize int `json:"event_buffer_size"`
+}
+
+type RuntimeConfig struct {
+	StateStoreConfig StateStoreConfig `json:"state_store"`
+
+}
+
+type WatermarkConfig struct {
+	Path string `json:"path"`
+	Type WatermarkType `json:"type"`
+}
+
+type StateStoreConfig struct {
+	WatermarConfig WatermarkConfig `json:"watermark"`
+	Type	  StateStoreType `json:"type"`
 }
 
 
@@ -97,6 +111,7 @@ type ConfigPipeline struct {
 	TransformersConfig []TransformerConfig `json:"transformers"`
 	SinkConfig SinkConfig `json:"sink"`
 	AdditionalConfig AdditionalConfig `json:"additional_configs"`
+	RuntimeConfig RuntimeConfig `json:"runtime"`
 }
 
 func LoadConfigPipeline(path string) ConfigPipeline{
@@ -128,10 +143,21 @@ const (
 type SinkType string
 const (
 	Rdbs  SinkType = "rdbs"
+	MemorySink SinkType = "memory"
 )
 
 type RdbsType string
 const (
 	Postgres RdbsType = "postgres"
+)
+
+type StateStoreType string
+const(
+	MemoryStateStore StateStoreType = "memory"
+)
+
+type WatermarkType string
+const(
+	Json  WatermarkType = "json"
 )
 

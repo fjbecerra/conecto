@@ -43,17 +43,9 @@
       "max_retries": 3,
       "backoff_ms": 500,
       "max_backoff" : 500
-    },
-    "rdbs" : {
-        "db_type" : "postgres",
-        "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable",
-        "table" : "FB_AD_INSIGHTS_PRODUCT",
-        "schema" : "default",
-        "upsert" : "product_id,date_start"        
-    } 
+    }
   },
   "additional_configs": {
-    "event_buffer_size" : 10,
     "fields_configs" : {
       "default":{
         "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
@@ -62,6 +54,15 @@
         "product_id": { "path": "product_id", "type": "int", "required" : false, "default": 0 },
         "date_start": { "path": "date_start", "type": "time", "required" : false, "default": 0 }
       }
+    }
+  },  
+  "runtime": {
+    "state_store": {
+      "watermark": {
+        "path": "date_start",
+        "type": "json"
+      },
+      "type" : "memory"
     }
   }
 }

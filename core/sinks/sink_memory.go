@@ -2,7 +2,7 @@ package sinks
 
 import (
 	"conecto/core"
-	"conecto/core/sinks/rdbs"
+	"conecto/core/sinks/codecs"
 	"context"
 	"fmt"
 	"sync"
@@ -10,28 +10,35 @@ import (
 
 type SinkMemory struct {
     mu   sync.Mutex
-    Mstore *[]map[string]interface{}
-    Adapter rdbs.Adapter
+    Mstore []map[string]interface{}
+    Codec codecs.Codec
+    OnWrite func()
 }
 
-func NewMemorySink(mstore*[]map[string]interface{}, adapter rdbs.Adapter) *SinkMemory{
+func NewMemorySink(mstore[]map[string]interface{}, codec codecs.Codec) *SinkMemory{
     var mu sync.Mutex
     return &SinkMemory{
         mu : mu,
         Mstore: mstore,
-        Adapter: adapter,
+        Codec: codec,
     }
 }
 
 func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) error{
     fmt.Println("SINK: received event")
+     if m.OnWrite != nil {
+            m.OnWrite()
+        }
     for _, event := range batch {
         m.mu.Lock()
-        record, error := m.Adapter.Decode(event.Payload)
+        record, error := m.Codec.Decode(event.Payload)
+        
         if error != nil {
             return error
         }
-        *m.Mstore = append(*m.Mstore, record)
+        
+        m.Mstore = append(m.Mstore, record)
+       
         m.mu.Unlock()
     }
     fmt.Println("SINK: exiting Run()")
