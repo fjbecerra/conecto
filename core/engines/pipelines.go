@@ -2,9 +2,10 @@ package engines
 
 import (
 	"conecto/core"
-	"conecto/core/statestores"
+	"conecto/core/sinks/statestores"
 	"conecto/core/transformers"
 	"context"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -62,6 +63,8 @@ func (p *Pipeline) Run(runtime Runtime) error {
 	// WAIT
 	return g.Wait()
 }
+
+
 
 type PipelineRunner interface {
 	Run(runtime Runtime) error	

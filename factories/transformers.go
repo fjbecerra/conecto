@@ -7,15 +7,17 @@ import (
 
 type Transformer struct {
 	Config []TransformerConfig
-	AdditinalConfigs AdditionalConfig
+	FieldsSpecsConfig map[string]FieldsSpecs
+	RuntimeConfig RuntimeConfig
 
 }
 
-func NewTransform(config []TransformerConfig, additinalConfigs AdditionalConfig) *Transformer {
+func NewTransform(config []TransformerConfig, fieldsSpecsConfig map[string]FieldsSpecs, runtimeConfig RuntimeConfig) *Transformer {
 	return &Transformer {
 		Config: config,
-		AdditinalConfigs: additinalConfigs,
-	}
+		FieldsSpecsConfig: fieldsSpecsConfig,
+		RuntimeConfig: runtimeConfig,
+ 	}
 }
 
 func (t * Transformer) Build() transformers.Transformer {
@@ -23,20 +25,28 @@ func (t * Transformer) Build() transformers.Transformer {
 	for _, tCfg := range t.Config {
 		switch tCfg.Type {
 			case TransformerExtractor : 
-				fieldsConfig := t.AdditinalConfigs.FieldsConfig[tCfg.ExtractorConfig.Fields]
+				fieldsConfig := t.FieldsSpecsConfig[tCfg.ExtractorConfig.Fields]
 				tranformers = append(tranformers, buildExtractor(fieldsConfig))
 			default:
 					panic("unsupported source type")
-			}
 		}
+	}
+	//append internal transformers
+	tranformers = append(tranformers, buildTenantIdEnricher(t.RuntimeConfig.PipelineId))
 	return &transformers.Chain{
 		Steps : tranformers,
 	}	
 }
 
-func buildExtractor(fieldsConfig FieldsConfig) transformers.Transformer {
+func buildExtractor(fieldsSpecs FieldsSpecs) transformers.Transformer {
 	return &transformers.Extractor{
-				Fields : transformers.Fields(fieldsConfig),
+				Fields : transformers.Fields(fieldsSpecs),
 				Selector: &transformers.GJSONSelector{},
+	}    
+}
+
+func buildTenantIdEnricher(pipelineId string) transformers.Transformer {
+	return &transformers.PipelineIdEnricher{
+				PipelineId: pipelineId,
 	}    
 }

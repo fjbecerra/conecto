@@ -1,7 +1,8 @@
-package memory
+package statestores
 
 import (
 	"conecto/core"
+	"conecto/core/sinks"
 	"context"
 	"fmt"
 	"sync"
@@ -24,10 +25,10 @@ func (s *MemoryStateStore) Load(ctx context.Context, pipelineID string) (core.St
 	return cursor, nil
 }
 
-func (s *MemoryStateStore) Save(ctx context.Context,pipelineID string,state core.State) error {
+func (s *MemoryStateStore) Save(ctx context.Context,pipelineID string,state core.State) (sinks.Command, error) {
 	fmt.Println("SAVE CALLED:", state.Cursor)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Store[pipelineID] = state
-	return nil
+	return nil,nil
 }

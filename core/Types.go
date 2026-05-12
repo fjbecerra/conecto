@@ -1,7 +1,5 @@
 package core
 
-import "time"
-
 type Event struct {
 	Payload []byte
 }
@@ -13,6 +11,8 @@ type Batch struct {
 
 type State struct {
 	Cursor    Cursor
-	Watermark time.Time
 }
 
+const(
+	PipelineId string = "pipeline_id"
+)

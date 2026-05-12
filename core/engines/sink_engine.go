@@ -2,23 +2,20 @@ package engines
 
 import (
 	"conecto/core"
-	"conecto/core/extractors"
-	"conecto/core/sinks"
-	"conecto/core/statestores"
+	"conecto/core/sinks/committers"
 	"conecto/core/transformers"
 	"math/rand/v2"
 	"time"
 )
 
 type SinkEngine struct {
-	Sink 		sinks.Sink
+	
 	BatchSize 	int
 	MaxRetries 	int
 	Backoff    	time.Duration
 	MaxBackoff time.Duration
-	Rand 	   *rand.Rand
-	WatermarkExtractor extractors.WatermarkExtractor
-	StateStore statestores.StateStore
+	Rand 	   *rand.Rand	
+	Commiter 	committers.Committer
 }
 
 func (e *SinkEngine) Run(
@@ -26,9 +23,6 @@ func (e *SinkEngine) Run(
 	in <-chan core.Batch,
 	transformer transformers.Transformer,
 ) error {
-
-	state := core.State{}
-
 	for {
 
 		select {
@@ -44,20 +38,8 @@ func (e *SinkEngine) Run(
 			// FLUSH
 			if err := e.flush(
 				runtime,
-				batch.Events,
+				batch,
 				transformer,
-			); err != nil {
-				return err
-			}
-
-			// UPDATE CHECKPOINT
-			state.Cursor = batch.Cursor
-
-			// PERSIST CHECKPOINT IMMEDIATELY
-			if err := e.StateStore.Save(
-				runtime.Context,
-				runtime.PipelineId,
-				state,
 			); err != nil {
 				return err
 			}
@@ -67,13 +49,13 @@ func (e *SinkEngine) Run(
 
 func (e *SinkEngine) flush(
 	runtime Runtime,
-	batch []core.Event,
+	batch core.Batch,
 	transformer transformers.Transformer,
 ) error {
 
 	for i := 0; i <= e.MaxRetries; i++ {
 
-		err := e.process(runtime, batch, transformer)
+		err := e.Commiter.CommitBatch(runtime.Context, runtime.PipelineId, batch ,transformer)
 		if err == nil {
 			return nil
 		}
@@ -92,21 +74,4 @@ func (e *SinkEngine) flush(
 	}
 
 	return nil
-}
-
-func (e *SinkEngine) process(
-	runtime Runtime,
-	batch []core.Event,
-	transformer transformers.Transformer,
-) error {
-
-	// transform
-	transformed, err := transformer.Transform(runtime.Context, batch)
-	if err != nil {
-		return err
-	}
-
-	// write to sink 
-	 return e.Sink.WriteBatch(runtime.Context, transformed);	
-
 }

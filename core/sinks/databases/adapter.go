@@ -1,4 +1,4 @@
-package rdbs
+package databases
 
 type Adapter interface {
 	Decode([]byte) (map[string]interface{}, error)

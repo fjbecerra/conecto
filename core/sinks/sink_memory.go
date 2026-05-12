@@ -24,7 +24,7 @@ func NewMemorySink(mstore[]map[string]interface{}, codec codecs.Codec) *SinkMemo
     }
 }
 
-func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) error{
+func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) (Command, error){
     fmt.Println("SINK: received event")
      if m.OnWrite != nil {
             m.OnWrite()
@@ -34,7 +34,7 @@ func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) error{
         record, error := m.Codec.Decode(event.Payload)
         
         if error != nil {
-            return error
+            return error,nil
         }
         
         m.Mstore = append(m.Mstore, record)
@@ -42,17 +42,7 @@ func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) error{
         m.mu.Unlock()
     }
     fmt.Println("SINK: exiting Run()")
-    return nil
-}
-
-func (m *SinkMemory) Commit(
-	ctx context.Context,
-	cursor core.Cursor,
-) error {
-
-	// checkpoint store (future DB table)
-	fmt.Println("checkpoint:", cursor)
-	return nil
+    return nil, nil
 }
 
 func (m *SinkMemory) Open(ctx context.Context) error {

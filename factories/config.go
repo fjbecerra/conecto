@@ -62,47 +62,42 @@ type ExtractorConfig struct {
 	Fields string `json:"fields"`	
 }
 
-type RDBSConfig struct {
-	DBType RdbsType `json:"db_type"` // postgres, mysql, bigquery
+type SchemaConfig struct {
 	DSN    string `json:"dsn"`
     Table 	string  `json:"table"`
-	Schema string `json:"schema"`
+	FieldsSpecs string `json:"fields_specs"`
 	Upsert string `json:"upsert"`
+	AutoCreate bool `json:"auto_create"`
 }
 
 type SinkConfig struct {
 	Type  SinkType `json:"type"`
-	RDBSConfig RDBSConfig `json:"rdbs"`
+	SchemaConfig SchemaConfig `json:"schema"`
 	BatchSize int `json:"batch_size"`
 	Retry RetryConfig `json:"retry"`
 }
 
-type FieldsConfig map[string]struct{
+type FieldsSpecs map[string]struct{
 	Path    string      `json:"path"`
 	Type    string      `json:"type"`
 	Default interface{} `json:"default"`
 	Required bool		`json:"required"`
 }
 
-type AdditionalConfigRawMessage map[string]json.RawMessage
-
-type AdditionalConfig struct{
-	FieldsConfig map[string]FieldsConfig `json:"fields_configs"`
-}
-
 type RuntimeConfig struct {
+	PipelineId 	string	`json:"pipeline_id"`
 	StateStoreConfig StateStoreConfig `json:"state_store"`
 
 }
 
-type WatermarkConfig struct {
-	Path string `json:"path"`
-	Type WatermarkType `json:"type"`
+type StateStoreConfig struct {
+	Type	StateStoreType `json:"type"`
+	Name 	string 			`json:"name"`
+	AutoCreate bool `json:"auto_create"`
 }
 
-type StateStoreConfig struct {
-	WatermarConfig WatermarkConfig `json:"watermark"`
-	Type	  StateStoreType `json:"type"`
+type DatabaseConfig struct {
+	DSN string `json:"dsn"`
 }
 
 
@@ -110,8 +105,9 @@ type ConfigPipeline struct {
 	ConnectorConfig ConnectorConfig `json:"connector"`
 	TransformersConfig []TransformerConfig `json:"transformers"`
 	SinkConfig SinkConfig `json:"sink"`
-	AdditionalConfig AdditionalConfig `json:"additional_configs"`
+	FieldsSpecsConfig map[string]FieldsSpecs `json:"fields_specs"`
 	RuntimeConfig RuntimeConfig `json:"runtime"`
+	DatabaseConfig DatabaseConfig `json:"database"`
 }
 
 func LoadConfigPipeline(path string) ConfigPipeline{
@@ -142,22 +138,16 @@ const (
 
 type SinkType string
 const (
-	Rdbs  SinkType = "rdbs"
+	PostgresSink  SinkType = "postgres"
 	MemorySink SinkType = "memory"
-)
-
-type RdbsType string
-const (
-	Postgres RdbsType = "postgres"
 )
 
 type StateStoreType string
 const(
 	MemoryStateStore StateStoreType = "memory"
+	PostgresStateStore StateStoreType = "postgres"
 )
 
-type WatermarkType string
-const(
-	Json  WatermarkType = "json"
-)
+
+
 

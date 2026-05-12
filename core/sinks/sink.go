@@ -5,9 +5,9 @@ import (
 	"context"
 )
 
+
 type Sink interface {
     Open(ctx context.Context) error
 	Close() error
-	WriteBatch(ctx context.Context, batch []core.Event) error
-	Commit(ctx context.Context, cursor core.Cursor) error
+	WriteBatch(ctx context.Context, batch []core.Event) (Command, error)
 }

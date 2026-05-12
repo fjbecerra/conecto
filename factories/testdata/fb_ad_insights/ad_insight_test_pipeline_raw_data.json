@@ -28,14 +28,6 @@
       ]
     }
   },
-  "transformers" : [
-    { 
-      "type":"extractor", 
-      "extractor":{
-        "fields": "default"
-      }
-    }
-  ],
   "sink" : {
     "type" : "memory",
     "batch_size" : 10,
@@ -44,24 +36,10 @@
       "backoff_ms": 500,
       "max_backoff" : 500
     }
-  },
-  "additional_configs": {
-    "fields_configs" : {
-      "default":{
-        "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
-        "clicks": { "path": "clicks", "type": "int", "required" : false, "default": 0 },
-        "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 },
-        "product_id": { "path": "product_id", "type": "int", "required" : false, "default": 0 },
-        "date_start": { "path": "date_start", "type": "time", "required" : false, "default": 0 }
-      }
-    }
   },  
   "runtime": {
+    "pipeline_id" : "homysur_facebook_ads",
     "state_store": {
-      "watermark": {
-        "path": "date_start",
-        "type": "json"
-      },
       "type" : "memory"
     }
   }

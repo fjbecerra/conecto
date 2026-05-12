@@ -37,31 +37,39 @@
     }
   ],
   "sink" : {
-    "type" : "rdbs",
+    "type" : "postgres",
     "batch_size" : 10,
     "retry": {
       "max_retries": 3,
       "backoff_ms": 500,
       "max_backoff" : 500
     },
-    "rdbs" : {
-        "db_type" : "postgres",
-        "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable",
+    "schema" : {
         "table" : "FB_AD_INSIGHTS_PRODUCT",
-        "schema" : "default",
-        "upsert" : "product_id,date_start"        
+        "fields_specs" : "default",
+        "upsert" : "product_id,date_start,pipeline_id",
+        "auto_create" : true       
     } 
   },
-  "additional_configs": {
-    "event_buffer_size" : 10,
-    "fields_configs" : {
-      "default":{
+  
+  "fields_specs" : {
+    "default":{
         "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
-        "clicks": { "path": "clicks", "type": "int", "required" : false, "default": 0 },
-        "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 },
-        "product_id": { "path": "product_id", "type": "int", "required" : false, "default": 0 },
-        "date_start": { "path": "date_start", "type": "time", "required" : false, "default": 0 }
+        "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
+        "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
+        "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
+        "date_start": { "path": "date_start", "type": "time", "required" : false, "default": null }
       }
+  },
+  "database": {
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+  },
+  "runtime": {
+    "pipeline_id" : "homysur_facebook_ads",
+    "state_store": {
+      "type" : "postgres",
+      "name" : "pipeline_state",
+      "auto_create": true
     }
   }
 }
