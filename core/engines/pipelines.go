@@ -2,34 +2,34 @@ package engines
 
 import (
 	"conecto/core"
-	"conecto/core/sinks/statestores"
+	"conecto/core/statestores"
 	"conecto/core/transformers"
 	"context"
+	"errors"
 
 	"golang.org/x/sync/errgroup"
 )
 
-type Runtime struct {
-	PipelineId 		string
-	Context 		context.Context
-}
-
 type Pipeline struct {	
 	ConnectorEngine * ConnectorEngine
-	SinkEngine 		* SinkEngine
 	Transformer 	transformers.Transformer
 	StateStore 		statestores.StateStore
+	CommitStrategy   CommitStrategy
 }
 
-func (p *Pipeline) Run(runtime Runtime) error {
+func (p *Pipeline) Run(runtime core.Runtime) error {
+	defer p.Shutdown(context.Background())
 
 	// CONTEXT (shared cancellation)
 	g, ctx := errgroup.WithContext(runtime.Context)
 
 	// LOAD CHECKPOINT (ONLY ONCE)
-	state, err := p.StateStore.Load(ctx, runtime.PipelineId)
+	state, err := p.StateStore.Load(runtime)
 	if err != nil {
 		return err
+	}
+	if state.Status == core.Completed {
+    	return nil // NOTHING TO DO
 	}
 
 	// CHANNEL
@@ -47,26 +47,72 @@ func (p *Pipeline) Run(runtime Runtime) error {
 		)
 	})
 
-	// SINK (owns checkpointing)
-	g.Go(func() error {
+	// processor
+    g.Go(func() error {
 
-		return p.SinkEngine.Run(
-			Runtime{
-				Context:    ctx,
-				PipelineId: runtime.PipelineId,
-			},
-			batches,
-			p.Transformer,
-		)
-	})
+        for batch := range batches {
+
+            events, err :=
+                p.Transformer.Transform(
+                    ctx,
+                    batch.Events,
+                )
+
+            if err != nil {
+                return err
+            }
+
+            batch.Events = events
+
+            if err := p.CommitStrategy.Commit(
+                runtime,
+                batch,
+            ); err != nil {
+                return err
+            }
+        }
+
+        return nil
+    })
 
 	// WAIT
-	return g.Wait()
+	err = g.Wait()
+	switch {
+
+		case err == nil:
+			return nil
+
+		case errors.Is(err, context.Canceled):
+			p.StateStore.Save(runtime, core.State{
+				Status: core.Stopped,
+			})
+			return err
+
+		default:
+			p.StateStore.Save(runtime, core.State{
+				Status: core.Failed,
+			})
+			return err
+		}
+
 }
 
+func (p *Pipeline) Shutdown(ctx context.Context) error {
 
+    var errs []error
+
+    if err := p.ConnectorEngine.Shutdown(ctx); err != nil {
+        errs = append(errs, err)
+    }
+
+    if err := p.CommitStrategy.Shutdown(ctx); err != nil {
+        errs = append(errs, err)
+    }
+
+    return errors.Join(errs...)
+}
 
 type PipelineRunner interface {
-	Run(runtime Runtime) error	
+	Run(runtime core.Runtime) error	
 }
 

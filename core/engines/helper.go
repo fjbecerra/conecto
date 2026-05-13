@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func backoffWithJitter(base time.Duration, attempt int, max time.Duration, r *rand.Rand) time.Duration {
+func BackoffWithJitter(base time.Duration, attempt int, max time.Duration, r *rand.Rand) time.Duration {
 	d := base * time.Duration(1<<attempt)
 
 	if d > max {

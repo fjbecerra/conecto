@@ -6,10 +6,6 @@ import (
 	"net/http"
 )
 
-type IClient interface {
-	Fetch(ctx context.Context, url string) ([]byte, error)
-}
-
 type RestClient struct{
 	client *http.Client
 	tokenProvider TokenProvider
@@ -45,4 +41,12 @@ func (c *RestClient) Fetch(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	return body, err
+}
+
+func (c *RestClient) Close() error{
+	if c.client != nil {
+        c.client.CloseIdleConnections()
+    }
+
+    return nil
 }

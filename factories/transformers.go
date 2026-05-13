@@ -31,8 +31,6 @@ func (t * Transformer) Build() transformers.Transformer {
 					panic("unsupported source type")
 		}
 	}
-	//append internal transformers
-	tranformers = append(tranformers, buildTenantIdEnricher(t.RuntimeConfig.PipelineId))
 	return &transformers.Chain{
 		Steps : tranformers,
 	}	
@@ -42,11 +40,5 @@ func buildExtractor(fieldsSpecs FieldsSpecs) transformers.Transformer {
 	return &transformers.Extractor{
 				Fields : transformers.Fields(fieldsSpecs),
 				Selector: &transformers.GJSONSelector{},
-	}    
-}
-
-func buildTenantIdEnricher(pipelineId string) transformers.Transformer {
-	return &transformers.PipelineIdEnricher{
-				PipelineId: pipelineId,
 	}    
 }

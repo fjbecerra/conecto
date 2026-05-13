@@ -66,7 +66,6 @@ type SchemaConfig struct {
 	DSN    string `json:"dsn"`
     Table 	string  `json:"table"`
 	FieldsSpecs string `json:"fields_specs"`
-	Upsert string `json:"upsert"`
 	AutoCreate bool `json:"auto_create"`
 }
 

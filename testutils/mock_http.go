@@ -16,7 +16,13 @@ func (m *MockClient) Fetch(ctx context.Context, url string) ([]byte, error) {
 	
 }
 
+func (m *MockClient) Close() error {
+	return nil	
+}
+
 func extract(body string) ([]byte, error) {
 	return json.RawMessage([]byte(body)), nil
 }
+
+
 

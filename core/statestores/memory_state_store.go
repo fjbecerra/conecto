@@ -2,8 +2,7 @@ package statestores
 
 import (
 	"conecto/core"
-	"conecto/core/sinks"
-	"context"
+	"conecto/core/commands"
 	"fmt"
 	"sync"
 )
@@ -14,10 +13,10 @@ type MemoryStateStore struct{
 	mu    sync.RWMutex
 }
 
-func (s *MemoryStateStore) Load(ctx context.Context, pipelineID string) (core.State, error) {
+func (s *MemoryStateStore) Load(runtime core.Runtime) (core.State, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	cursor, exist := s.Store[pipelineID]
+	cursor, exist := s.Store[runtime.PipelineId]
 	if(!exist){
 		return core.State{}, nil
 	}
@@ -25,10 +24,14 @@ func (s *MemoryStateStore) Load(ctx context.Context, pipelineID string) (core.St
 	return cursor, nil
 }
 
-func (s *MemoryStateStore) Save(ctx context.Context,pipelineID string,state core.State) (sinks.Command, error) {
+func (s *MemoryStateStore) Save(runtime core.Runtime,state core.State) ([]commands.Command, error) {
 	fmt.Println("SAVE CALLED:", state.Cursor)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Store[pipelineID] = state
+	s.Store[runtime.PipelineId] = state
 	return nil,nil
+}
+
+func (c *MemoryStateStore) Close() error{
+	return nil
 }

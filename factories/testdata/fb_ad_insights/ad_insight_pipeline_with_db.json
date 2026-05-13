@@ -47,7 +47,6 @@
     "schema" : {
         "table" : "FB_AD_INSIGHTS_PRODUCT",
         "fields_specs" : "default",
-        "upsert" : "product_id,date_start,pipeline_id",
         "auto_create" : true       
     } 
   },

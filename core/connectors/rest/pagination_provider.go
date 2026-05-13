@@ -7,6 +7,11 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+type IClient interface {
+	Fetch(ctx context.Context, url string) ([]byte, error)
+	Close() error
+}
+
 type PaginationProvider struct {
 	Client 	IClient
 	BaseUrl string
@@ -51,4 +56,8 @@ func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *PageCursor) 
 		NextCursor: nextCursor,
 		HasMore:    next != "",
 	}, nil
+}
+
+func (p *PaginationProvider) Close() error {
+	return p.Client.Close()
 }

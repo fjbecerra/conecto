@@ -2,8 +2,8 @@ package sinks
 
 import (
 	"conecto/core"
+	"conecto/core/commands"
 	"conecto/core/sinks/codecs"
-	"context"
 	"fmt"
 	"sync"
 )
@@ -24,7 +24,7 @@ func NewMemorySink(mstore[]map[string]interface{}, codec codecs.Codec) *SinkMemo
     }
 }
 
-func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) (Command, error){
+func (m *SinkMemory) WriteBatch(runtime core.Runtime, batch [] core.Event) ([]commands.Command, error){
     fmt.Println("SINK: received event")
      if m.OnWrite != nil {
             m.OnWrite()
@@ -34,7 +34,7 @@ func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) (Comma
         record, error := m.Codec.Decode(event.Payload)
         
         if error != nil {
-            return error,nil
+            return nil,error
         }
         
         m.Mstore = append(m.Mstore, record)
@@ -42,17 +42,7 @@ func (m *SinkMemory) WriteBatch(ctx context.Context, batch [] core.Event) (Comma
         m.mu.Unlock()
     }
     fmt.Println("SINK: exiting Run()")
-    return nil, nil
-}
-
-func (m *SinkMemory) Open(ctx context.Context) error {
-	fmt.Println("SINK: open")
-	return nil
-}
-
-func (m *SinkMemory) Close() error {
-	fmt.Println("SINK: close")
-	return nil
+    return nil,nil
 }
 
 

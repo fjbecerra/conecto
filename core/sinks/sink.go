@@ -2,12 +2,10 @@ package sinks
 
 import (
 	"conecto/core"
-	"context"
+	"conecto/core/commands"
 )
 
 
 type Sink interface {
-    Open(ctx context.Context) error
-	Close() error
-	WriteBatch(ctx context.Context, batch []core.Event) (Command, error)
+	WriteBatch(runtime core.Runtime, batch []core.Event) ([]commands.Command, error)
 }

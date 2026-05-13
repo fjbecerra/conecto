@@ -2,7 +2,7 @@ package factories
 
 import (
 	"conecto/core"
-	"conecto/core/sinks/statestores"
+	"conecto/core/statestores"
 	"fmt"
 )
 
@@ -45,9 +45,10 @@ func (c *StateStore) createPostgresTableStore() {
 	query := `
 	CREATE TABLE IF NOT EXISTS %s (
 		id SERIAL PRIMARY KEY,
-		pipeline_id TEXT NOT NULL,
+		pipeline_id TEXT NOT NULL UNIQUE,
 		cursor JSONB NOT NULL,
-		created_at TIMESTAMP DEFAULT NOW() NOT NULL
+		status TEXT NOT NULL,
+		updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 	)
 	`
 	_, err := c.DBConnection.DB.Exec(fmt.Sprintf(query, c.StateStoreConfig.Name))

@@ -10,35 +10,44 @@ type PostgresAdapter struct{
 	Codec codecs.Codec
 }
 
-func (a *PostgresAdapter) BuildUpsertQuery(schema Schema, upsert Upsert ,batchSize int) string {
-
+func (a *PostgresAdapter) BuildUpsertQuery(schema Schema ,batchSize int) string {
+	//schema
 	var rows []string
 	arg := 1
-	columns:= append(schema.Columns, schema.Metadata...)
 	for i := 0; i < batchSize; i++ {
-		row := make([]string, len(columns))
-		for j := range columns {
-			row[j] = fmt.Sprintf("$%d", arg)
+		columns := make([]string, len(schema.Columns))
+		for j := range schema.Columns {
+			columns[j] = fmt.Sprintf("$%d", arg)
 			arg++
 		}
+		metadata := make([]string, len(schema.Metadata))
+		for j := range schema.Metadata {
+			metadata[j] = fmt.Sprintf("$%d", arg)
+			arg++
+		}
+		row:= append(columns, metadata...)
 		rows = append(rows, "("+strings.Join(row, ",")+")")
 	}
 
-	var updates []string
-	for _, c := range columns {
-		updates = append(updates, fmt.Sprintf("%s=EXCLUDED.%s", c, c))
+	metadataColumns := []string{}
+	uniqueColumns := []string{}
+	
+	for _, c := range  schema.Metadata {
+		metadataColumns = append(metadataColumns, c.Column)
+		if c.Unique {
+			uniqueColumns = append(uniqueColumns, c.Column)
+		}
 	}
-
+	
 	query:= fmt.Sprintf(`
 		INSERT INTO %s (%s)
 		VALUES %s
-		ON CONFLICT (%s) DO UPDATE SET %s
+		ON CONFLICT (%s) DO NOTHING
 	`,
 		schema.Table,
-		strings.Join(columns, ","),
+		strings.Join(append(schema.Columns, metadataColumns...), ","),
 		strings.Join(rows, ","),
-		strings.Join(upsert.ConflictColumns, ","),
-		strings.Join(updates, ","),
+		strings.Join([]string{"__event_id","__pipeline_id"}, ","),
 	)
 	return query
 }

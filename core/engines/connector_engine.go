@@ -3,17 +3,15 @@ package engines
 import (
 	"conecto/core"
 	"conecto/core/connectors"
+	"conecto/core/retry"
 	"context"
-	"math/rand/v2"
-	"time"
 )
+
+
 
 type ConnectorEngine struct {
 	Connector connectors.Connector
-	MaxRetries int
-	Backoff    time.Duration
-	MaxBackoff time.Duration
-	Rand 	   *rand.Rand
+	Retry retry.Executor
 }
 
 func (e *ConnectorEngine) Run(
@@ -28,52 +26,46 @@ func (e *ConnectorEngine) Run(
 		return err
 	}
 	defer e.Connector.Close()
+	var batch core.Batch
 
 	for {
-
-		var batch core.Batch
-		var err error
-
-		//RETRY FETCH
-		for i := 0; i <= e.MaxRetries; i++ {
-
-			batch, err = e.Connector.FetchBatch(ctx, current)
-			if err == nil {
-				break
-			}
-
-			if i == e.MaxRetries {
-				return err
-			}
-
-			delay := backoffWithJitter(e.Backoff, i, e.MaxBackoff, e.Rand)
-
-			select {
-			case <-time.After(delay):
-			case <-ctx.Done():
-				return ctx.Err()
-			}
+		 err := e.Retry.Do(ctx, func() error {
+    		var err error
+    		batch, err = e.Connector.FetchBatch(ctx, current)
+    		return err
+		})
+		if err != nil {
+			return err
 		}
-
+		
 		if len(batch.Events) == 0 {
 			return nil
 		}		
-		// EMIT BATCH (checkpoint = CURRENT)
+		
+		//end of stream
+		var isLast bool
+		if batch.Cursor == nil {
+			isLast = true
+		}
 		select {
 		case out <- core.Batch{
 			Events: batch.Events,
-			Cursor: current,
+			Cursor: batch.Cursor,
+			IsLast: isLast,
 		}:
 		case <-ctx.Done():
 			return ctx.Err()
 		}
-
-		
-		// ADVANCE FETCH CURSOR
-		if batch.Cursor == nil {
-			return nil
-		}
+	
+		// END OF STREAM 
+		// if batch.Cursor == nil {
+		// 	return nil
+		// }
 
 		current = batch.Cursor
 	}
+}
+
+func (c *ConnectorEngine) Shutdown(ctx context.Context) error {
+	return c.Connector.Close()
 }

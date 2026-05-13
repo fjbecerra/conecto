@@ -4,8 +4,9 @@ import (
 	"conecto/core/connectors"
 	"conecto/core/connectors/rest"
 	"conecto/core/engines"
+	"conecto/core/idempotency"
+	"conecto/core/retry"
 	"conecto/testutils"
-	"math/rand/v2"
 	"net/http"
 	"os"
 	"time"
@@ -13,13 +14,13 @@ import (
 
 type Connector struct {
 	Config ConnectorConfig
-	Rand *rand.Rand
+	RandFn func() float64
 }
 
-func NewConnector(config ConnectorConfig, rand *rand.Rand) *Connector{
+func NewConnector(config ConnectorConfig, randFn func() float64) *Connector{
 	return &Connector{
 		Config: config,
-		Rand: rand,
+		RandFn: randFn,
 	}
 }
 
@@ -33,12 +34,21 @@ func (c *Connector)Build() engines.ConnectorEngine {
 	default:
 		panic("unknown source type: " + c.Config.Type)
 	}
+
+	retryPolicy:= retry.Policy{
+		MaxRetries: c.Config.Retry.MaxRetries,
+		InitialBackoff: time.Duration(c.Config.Retry.BackoffMS),
+		MaxBackoff: time.Duration(c.Config.Retry.MaxBackoff),
+		Jitter: true,
+	}
+	retryExecutor := retry.Executor {
+		Policy: retryPolicy,
+		Rand: c.RandFn,
+	}
+
 	return engines.ConnectorEngine{
 		Connector: connector,
-		MaxRetries: c.Config.Retry.MaxRetries,
-		Backoff: time.Duration(c.Config.Retry.BackoffMS),
-		MaxBackoff: time.Duration(c.Config.Retry.MaxBackoff),
-		Rand: c.Rand,
+		Retry: retryExecutor,
 	}
 
 }
@@ -61,9 +71,10 @@ func buildRest(config RestConfig) *rest.RESTConnector {
 		ResponseNextPath: config.BaseRestConfig.Pagination.Response.Next.Path,
 		RequestParam: config.BaseRestConfig.Pagination.Request.Param,
 	}
-
+	generator:= idempotency.HashGenerator{}
 	return &rest.RESTConnector {
 			Provider: &paginationProvider,
+			Generator: &generator,
 	}	
 }
 
@@ -82,8 +93,9 @@ func buildMockedRest(config MockedRestConfig) *rest.RESTConnector{
 		ResponseNextPath: config.BaseRestConfig.Pagination.Response.Next.Path,
 		RequestParam: config.BaseRestConfig.Pagination.Request.Param,
 	}
-
+	generator:= idempotency.HashGenerator{}
 	return &rest.RESTConnector {
 			Provider: &paginationProvider,
+			Generator: &generator,
 	}
 }

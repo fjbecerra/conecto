@@ -18,15 +18,15 @@ func BuildPipeline(config ConfigPipeline) engines.Pipeline{
 
 
 	
-	connector := NewConnector(config.ConnectorConfig, r).Build()
+	connector := NewConnector(config.ConnectorConfig, r.Float64).Build()
 	transform := NewTransform(config.TransformersConfig, config.FieldsSpecsConfig, config.RuntimeConfig).Build()
 	connection:= NewDatabase(config.DatabaseConfig).Build()
 	stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, connection).Build()
-	sink := NewSink(config.SinkConfig, config.FieldsSpecsConfig, r, stateStore, connection).Build()
+	sink := NewSink(config.SinkConfig, config.FieldsSpecsConfig, r.Float64, stateStore, connection).Build()
 	
 	return engines.Pipeline{
 		ConnectorEngine: &connector,
-		SinkEngine:   &sink,
+		CommitStrategy:  sink,
         Transformer: transform,
         StateStore: stateStore,
 	}

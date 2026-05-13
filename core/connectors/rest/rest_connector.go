@@ -2,12 +2,15 @@ package rest
 
 import (
 	"conecto/core"
+	"conecto/core/idempotency"
 	"context"
 	"fmt"
+	"time"
 )
 
 type RESTConnector struct {
 	Provider *PaginationProvider
+	Generator idempotency.Generator
 }
 
 func (c *RESTConnector) FetchBatch(ctx context.Context, state core.Cursor) (core.Batch, error) {
@@ -31,6 +34,10 @@ func (c *RESTConnector) FetchBatch(ctx context.Context, state core.Cursor) (core
 	for i, row := range page.Data {
 		events[i] = core.Event{
 			Payload: row,
+			Meta: core.EventMeta{
+				"__event_id": c.Generator.Generate(row),
+				"__ingested_at": time.Now(),
+			},
 		}
 	}
 
@@ -52,6 +59,6 @@ func (c *RESTConnector) Open(ctx context.Context,state core.Cursor) error {
 	return nil
 }
 
-func (c *RESTConnector) Close() error {
-	return nil
+func (c *RESTConnector) Close() error {	
+    return c.Provider.Close()
 }
