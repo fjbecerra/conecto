@@ -1,52 +1,48 @@
 package rest
 
 import (
-	"context"
-	"io"
+	"conecto/core"
+	"conecto/core/connectors/rest/auths"
 	"net/http"
 )
 
 type RestClient struct{
-	client *http.Client
-	tokenProvider TokenProvider
+	Client 	IClient
+	TokenProvider auths.TokenProvider
+	TokenStore auths.TokenStore
 }
 
-func NewRestClient(client *http.Client, tokenProvicer TokenProvider) *RestClient{
+func NewRestClient(client IClient, tokenProvicer auths.TokenProvider, tokenStore auths.TokenStore) *RestClient{
     return &RestClient{
-        client: client,
-		tokenProvider: tokenProvicer,
+        Client: client,
+		TokenProvider: tokenProvicer,
+		TokenStore: tokenStore,
     }
 }
 
-func (c *RestClient) Fetch(ctx context.Context, url string) ([]byte, error) {
+func (c *RestClient) Fetch(runtime core.Runtime, url string) ([]byte, error) {
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	token, err := c.TokenStore.Get(runtime)
 	if err != nil {
 		return nil, err
 	}
-	if c.tokenProvider != nil {
-		if err := c.tokenProvider.Apply(req); err != nil {
+
+	req, err := http.NewRequestWithContext(runtime.Context, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if c.TokenProvider != nil {
+		if err := c.TokenProvider.Apply(req, token); err != nil {
 			return nil, err
 		}
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, err
+	return c.Client.Fetch(req)
 }
 
-func (c *RestClient) Close() error{
-	if c.client != nil {
-        c.client.CloseIdleConnections()
-    }
-
-    return nil
+func (c *RestClient) Close() error{	
+	err := c.TokenStore.Close()
+	if err!=nil{
+		return err
+	}
+    return  c.Client.Close()    
 }

@@ -38,10 +38,11 @@ func (p *Pipeline) Run(runtime core.Runtime) error {
 	// CONNECTOR
 	g.Go(func() error {
 
+
 		defer close(batches)
 
 		return p.ConnectorEngine.Run(
-			ctx,
+			runtime,
 			state,
 			batches,
 		)

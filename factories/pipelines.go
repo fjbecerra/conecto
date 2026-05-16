@@ -16,11 +16,9 @@ func BuildPipeline(config ConfigPipeline) engines.Pipeline{
 		uint64(seed>>1),
 	))
 
-
-	
-	connector := NewConnector(config.ConnectorConfig, r.Float64).Build()
-	transform := NewTransform(config.TransformersConfig, config.FieldsSpecsConfig, config.RuntimeConfig).Build()
 	connection:= NewDatabase(config.DatabaseConfig).Build()
+	connector := NewConnector(config.ConnectorConfig, r.Float64, connection).Build()
+	transform := NewTransform(config.TransformersConfig, config.FieldsSpecsConfig, config.RuntimeConfig).Build()
 	stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, connection).Build()
 	sink := NewSink(config.SinkConfig, config.FieldsSpecsConfig, r.Float64, stateStore, connection).Build()
 	

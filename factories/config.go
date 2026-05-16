@@ -6,40 +6,53 @@ import (
 )
 
 type ConnectorConfig struct{
-	Type SourceType `json:"type"`
+	Type ConnectorType `json:"type"`	
+	Retry RetryConfig `json:"retry"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
-	Retry RetryConfig `json:"retry"`
 }
-type BaseRestConfig struct{
-	Data struct {
-		Path    string `json:"path"`
-		IsArray bool   `json:"is_array"`
-	}`json:"data"`
-	Pagination struct {
-		Type string `json:"type"`
-
-		Request struct {
-			Param string `json:"param"`
-		} `json:"request"`
-
-		Response struct {
-			Next struct {
-				Path string `json:"path"`
-			} `json:"next"`
-		} `json:"response"`
-	} `json:"pagination"`
-
-}
-type RestConfig struct {
-	BaseRestConfig
+type RestConfig struct{	
 	BaseUrl string `json:"base_url"`
-	Authentication struct{
-		Type string `json:"type"`
-		QueryToken struct {
-			ParamName string `json:"param_name"`
-		}`json:"query_token"`
-	}`json:"authentication"`
+	DataConfig DataConfig `json:"data"`
+    PaginationConfig PaginationConfig `json:"pagination"`
+	TokenStoreConfig TokenStoreConfig `json:"token_store"`
+	AuthenticationConfig AuthenticationConfig `json:"authentication"`	
+}
+
+type DataConfig struct {
+	Path    string `json:"path"`
+	IsArray bool   `json:"is_array"`
+}
+
+type PaginationConfig struct {
+	Type string `json:"type"`
+
+	Request struct {
+		Param string `json:"param"`
+	} `json:"request"`
+
+	Response struct {
+		Next struct {
+			Path string `json:"path"`
+		} `json:"next"`
+	} `json:"response"`
+}
+
+type TokenStoreConfig struct {
+	Type TokenStoreType `json:"type"`
+	AutoCreate bool `json:"auto_create"`
+	Name string `json:"name"`
+}
+
+type AuthenticationConfig struct{
+	Type string `json:"type"`
+	QueryToken struct {
+		ParamName string `json:"param_name"`
+	}`json:"query_token"`
+}
+
+type MockedRestConfig struct{
+	ResponsePaths []string `json:"response_paths"`
 }
 
 type RetryConfig struct {
@@ -48,10 +61,6 @@ type RetryConfig struct {
 	MaxBackoff int 	`json:"max_backoff"`
 }
 
-type MockedRestConfig struct{
-	ResponsePaths []string `json:"response_paths"`
-	BaseRestConfig
-}
 
 type TransformerConfig struct {
 	Type TransformerType `json:"type"`
@@ -124,10 +133,10 @@ func LoadConfigPipeline(path string) ConfigPipeline{
     return config
 }
 
-type SourceType string
+type ConnectorType string
 const (
-	SourceRest 		 SourceType = "rest"
-	SourceMockedRest SourceType = "mocked_rest"
+	Rest 	   ConnectorType = "rest"
+	MockedRest ConnectorType = "mocked_rest"
 )
 
 type TransformerType string
@@ -145,6 +154,12 @@ type StateStoreType string
 const(
 	MemoryStateStore StateStoreType = "memory"
 	PostgresStateStore StateStoreType = "postgres"
+)
+
+type TokenStoreType string
+const(
+	MemoryTokenStore TokenStoreType = "memory"
+	PostgresTokenStore TokenStoreType = "postgres"
 )
 
 

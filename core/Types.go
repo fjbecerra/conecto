@@ -2,9 +2,12 @@ package core
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type EventMeta map[string]any
@@ -12,6 +15,23 @@ type EventMeta map[string]any
 type Event struct {
 	Payload []byte
 	Meta EventMeta
+}
+
+func NewEvent(payload []byte) Event {
+	meta:= EventMeta{
+		"__event_id": Generate(payload),
+		"__ingested_at": time.Now(),
+	}
+	return Event{
+		Payload: payload,
+		Meta: meta,
+	}
+}
+
+func Generate(payload []byte) string {
+    h := sha256.New()
+    h.Write(payload)
+    return hex.EncodeToString(h.Sum(nil))
 }
 
 type Batch struct {
@@ -93,5 +113,6 @@ func Decode(s string) Cursor {
 
 type Runtime struct {
 	PipelineId 		string
+	Provider       string
 	Context 		context.Context
 }

@@ -1,22 +1,23 @@
 package testutils
 
 import (
-	"context"
 	"encoding/json"
+	"net/http"
 )
 
-type MockClient struct {
+type MockHttpClient struct {
 	Calls map[int]string
+
 }
 
 var pageCount = -1
-func (m *MockClient) Fetch(ctx context.Context, url string) ([]byte, error) {
+func (m *MockHttpClient) Fetch(req *http.Request) ([]byte, error){
 	pageCount++
 	return extract(m.Calls[pageCount])
 	
 }
 
-func (m *MockClient) Close() error {
+func (m *MockHttpClient) Close() error {
 	return nil	
 }
 

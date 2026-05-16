@@ -2,24 +2,50 @@ package factories
 
 import (
 	"conecto/core"
+	"conecto/core/connectors/rest"
+	"conecto/core/connectors/rest/auths"
 	"conecto/core/engines"
 	"conecto/core/sinks"
 	"conecto/core/statestores"
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"testing"
+
+	"github.com/joho/godotenv"
 )
+
+func TestMain(m *testing.M) {
+
+	_ = godotenv.Load("../.env")
+
+	code := m.Run()
+
+	os.Exit(code)
+}
 
 func TestMockedFbAdInsightPipelineRawData(t *testing.T) {	
 	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline_raw_data.json")
 	pipeline:= BuildPipeline(config)
 	runtime:= core.Runtime{
 		PipelineId: config.RuntimeConfig.PipelineId,
+		Provider: "facebook_ad_insight",
 		Context: context.Background(),
 	}
-	error:= pipeline.Run(runtime)
+
+	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	token:= auths.Token{
+		AccessToken : "any-token",
+		RefreshToken: "any-refresh-token",
+		Expiry: time.Now(),
+	}
+	error:= tokenStore.Save(runtime, token)
+	if error != nil {
+		t.Error(error.Error())
+	}	
+	error= pipeline.Run(runtime)
 	if error != nil {
 		t.Error(error.Error())
 	}
@@ -33,12 +59,26 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 
 func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {	
 	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline_flattened_data.json")
+
 	pipeline:= BuildPipeline(config)
 	runtime:= core.Runtime{
 		PipelineId: config.RuntimeConfig.PipelineId,
+		Provider: "facebook_ad_insight",
 		Context: context.Background(),
 	}
-	error:= pipeline.Run(runtime)
+
+	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	token:= auths.Token{
+		AccessToken : "any-token",
+		RefreshToken: "any-refresh-token",
+		Expiry: time.Now(),
+	}
+	error:= tokenStore.Save(runtime, token)
+	if error != nil {
+		t.Error(error.Error())
+	}		
+
+	error= pipeline.Run(runtime)
 	if error != nil {
 		t.Error(error.Error())
 	}
@@ -66,17 +106,28 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	store := pipeline.CommitStrategy.(*engines.AtLeastOnceCommitStrategy).StateStore.(*statestores.MemoryStateStore)
 
+	runtime:= core.Runtime{
+		PipelineId: "test",
+		Provider: "facebook_ad_insight",
+		Context: context.Background(),
+	}
+
+	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	token:= auths.Token{
+		AccessToken : "any-token",
+		RefreshToken: "any-refresh-token",
+		Expiry: time.Now(),
+	}
+	er:= tokenStore.Save(runtime, token)
+	if er != nil {
+		t.Error(er.Error())
+	}	
 	
 	// RUN PIPELINE
 	errCh := make(chan error, 1)
 
 	go func() {
-		errCh <- pipeline.Run(
-			core.Runtime{
-				Context:    ctx,
-				PipelineId: "test",
-			},
-		)
+		errCh <- pipeline.Run(runtime)
 	}()
 
 	// GIVE PIPELINE TIME TO PROCESS SOME DATA
@@ -110,13 +161,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	_ = state
 
 	// RESTART PIPELINE
-	err = pipeline.Run(
-		core.Runtime{
-			Context:    context.Background(),
-			PipelineId: "test",
-		},
-	)
-
+	err = pipeline.Run(runtime)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,9 +181,19 @@ func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_pipeline_with_db.json")
 	pipeline:= BuildPipeline(config)
 	runtime:= core.Runtime{
-		PipelineId: "test2",
+		PipelineId: "test",
 		Context: context.Background(),
 	}
+	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	token:= auths.Token{
+		AccessToken : "any-token",
+		RefreshToken: "any-refresh-token",
+		Expiry: time.Now(),
+	}
+	er:= tokenStore.Save(runtime, token)
+	if er != nil {
+		t.Error(er.Error())
+	}	
 	error:= pipeline.Run(runtime)
 	if error != nil {
 		t.Error(error.Error())

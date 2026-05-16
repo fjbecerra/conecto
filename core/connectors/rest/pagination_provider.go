@@ -1,26 +1,22 @@
 package rest
 
 import (
-	"context"
+	"conecto/core"
 	"encoding/json"
 	"net/url"
+
 	"github.com/tidwall/gjson"
 )
 
-type IClient interface {
-	Fetch(ctx context.Context, url string) ([]byte, error)
-	Close() error
-}
-
 type PaginationProvider struct {
-	Client 	IClient
+	RestClient 	RestClient
 	BaseUrl string
 	DataPath string
 	ResponseNextPath string
 	RequestParam string
 }
 
-func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *PageCursor) (Page[json.RawMessage], error) {
+func (p *PaginationProvider) FetchPage(runtime core.Runtime, cursor *PageCursor) (Page[json.RawMessage], error) {
 
 	var u, _ = url.Parse(p.BaseUrl)
 	q := u.Query()
@@ -31,7 +27,7 @@ func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *PageCursor) 
 	
 	u.RawQuery = q.Encode()
 
-	body, err := p.Client.Fetch(ctx, u.String())
+	body, err := p.RestClient.Fetch(runtime, u.String())
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}
@@ -59,5 +55,5 @@ func (p *PaginationProvider) FetchPage(ctx context.Context, cursor *PageCursor) 
 }
 
 func (p *PaginationProvider) Close() error {
-	return p.Client.Close()
+	return p.RestClient.Close()
 }

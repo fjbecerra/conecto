@@ -6,11 +6,15 @@
       "backoff_ms": 500,
       "max_backoff" : 500
     },
-    "mocked_rest":{
+    "rest":{
       "data": {
         "path" : "data",
         "is_array": true    
-      },  
+      },
+      "authentication" : {
+        "type" : "query",
+        "paramName" : "access_token"
+      },   
       "pagination": {
         "type": "cursor",
         "request": {
@@ -22,6 +26,11 @@
           }
         }
       },
+      "token_store":{
+        "type": "memory"
+      }
+    },
+    "mocked_rest":{
       "response_paths" : [
         "./testdata/fb_ad_insights/response_page_1_action_product_id.json",
         "./testdata/fb_ad_insights/response_page_2_action_product_id.json"

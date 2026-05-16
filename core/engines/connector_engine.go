@@ -15,23 +15,20 @@ type ConnectorEngine struct {
 }
 
 func (e *ConnectorEngine) Run(
-	ctx context.Context,
+	runtime core.Runtime,
 	state core.State,
 	out chan<- core.Batch,
 ) error {
 
 	current := state.Cursor
 
-	if err := e.Connector.Open(ctx, current); err != nil {
-		return err
-	}
 	defer e.Connector.Close()
 	var batch core.Batch
 
 	for {
-		 err := e.Retry.Do(ctx, func() error {
+		 err := e.Retry.Do(runtime.Context, func() error {
     		var err error
-    		batch, err = e.Connector.FetchBatch(ctx, current)
+    		batch, err = e.Connector.FetchBatch(runtime, current)
     		return err
 		})
 		if err != nil {
@@ -53,14 +50,9 @@ func (e *ConnectorEngine) Run(
 			Cursor: batch.Cursor,
 			IsLast: isLast,
 		}:
-		case <-ctx.Done():
-			return ctx.Err()
+		case <-runtime.Context.Done():
+			return runtime.Context.Err()
 		}
-	
-		// END OF STREAM 
-		// if batch.Cursor == nil {
-		// 	return nil
-		// }
 
 		current = batch.Cursor
 	}
