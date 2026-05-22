@@ -1,6 +1,0 @@
-Page {
-  page_id: STRING,
-  name: STRING,
-  category: STRING,
-  followers: INTEGER
-}

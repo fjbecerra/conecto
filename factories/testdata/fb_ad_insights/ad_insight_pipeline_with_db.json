@@ -1,4 +1,5 @@
 {
+  "pipeline_id": "facbook_insights_homy",
   "connector" : {
     "type" : "mocked_rest",
     "retry": {
@@ -29,7 +30,8 @@
       "token_store":{
         "type": "postgres",
         "auto_create" : true,
-        "name":"oauth_tokens"
+        "name":"oauth_tokens",
+        "source" : "source1"
       }
     },
     "mocked_rest":{
@@ -59,7 +61,8 @@
         "table" : "FB_AD_INSIGHTS_PRODUCT",
         "fields_specs" : "default",
         "auto_create" : true       
-    } 
+    },
+    "source" : "source1"
   },
   
   "fields_specs" : {
@@ -71,15 +74,22 @@
         "date_start": { "path": "date_start", "type": "time", "required" : false, "default": null }
       }
   },
-  "database": {
-      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
-  },
   "runtime": {
-    "pipeline_id" : "homysur_facebook_ads",
     "state_store": {
       "type" : "postgres",
       "name" : "pipeline_state",
-      "auto_create": true
+      "auto_create": true,
+      "source" : "source1"
+    }
+  },
+  "sources" : {
+    "source1": {
+      "type": "postgres",
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+    },
+     "source2": {
+      "type": "postgres",
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
     }
   }
 }

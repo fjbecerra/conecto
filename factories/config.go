@@ -42,6 +42,7 @@ type TokenStoreConfig struct {
 	Type TokenStoreType `json:"type"`
 	AutoCreate bool `json:"auto_create"`
 	Name string `json:"name"`
+	Source string `json:"source"`
 }
 
 type AuthenticationConfig struct{
@@ -72,7 +73,6 @@ type ExtractorConfig struct {
 }
 
 type SchemaConfig struct {
-	DSN    string `json:"dsn"`
     Table 	string  `json:"table"`
 	FieldsSpecs string `json:"fields_specs"`
 	AutoCreate bool `json:"auto_create"`
@@ -83,6 +83,7 @@ type SinkConfig struct {
 	SchemaConfig SchemaConfig `json:"schema"`
 	BatchSize int `json:"batch_size"`
 	Retry RetryConfig `json:"retry"`
+	Source string `json:"source"`
 }
 
 type FieldsSpecs map[string]struct{
@@ -93,29 +94,30 @@ type FieldsSpecs map[string]struct{
 }
 
 type RuntimeConfig struct {
-	PipelineId 	string	`json:"pipeline_id"`
 	StateStoreConfig StateStoreConfig `json:"state_store"`
-
 }
 
 type StateStoreConfig struct {
 	Type	StateStoreType `json:"type"`
 	Name 	string 			`json:"name"`
 	AutoCreate bool `json:"auto_create"`
+	Source string `json:"source"`
 }
 
-type DatabaseConfig struct {
-	DSN string `json:"dsn"`
+type SourcesConfig map[string]struct {
+	DSN  string `json:"dsn"`
+	Type SourcesType `json:"type"` 
 }
 
 
 type ConfigPipeline struct {
+	ID string `json:"pipeline_id"`
 	ConnectorConfig ConnectorConfig `json:"connector"`
 	TransformersConfig []TransformerConfig `json:"transformers"`
 	SinkConfig SinkConfig `json:"sink"`
 	FieldsSpecsConfig map[string]FieldsSpecs `json:"fields_specs"`
 	RuntimeConfig RuntimeConfig `json:"runtime"`
-	DatabaseConfig DatabaseConfig `json:"database"`
+	SourcesConfig SourcesConfig `json:"sources"`
 }
 
 func LoadConfigPipeline(path string) ConfigPipeline{
@@ -160,6 +162,11 @@ type TokenStoreType string
 const(
 	MemoryTokenStore TokenStoreType = "memory"
 	PostgresTokenStore TokenStoreType = "postgres"
+)
+
+type SourcesType string
+const(
+	PostgresSource 	SourcesType = "postgres"
 )
 
 

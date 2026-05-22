@@ -8,7 +8,7 @@ import (
 
 type Executor struct {
     Policy Policy
-    Rand   func() float64
+    Random   Random
 }
 
 func (e *Executor) Do(ctx context.Context, fn func() error) error {
@@ -30,7 +30,7 @@ func (e *Executor) Do(ctx context.Context, fn func() error) error {
         delay := backoff
 
         if e.Policy.Jitter {
-            delay = jitter(delay, e.Rand)
+            delay = jitter(delay, e.Random.Float64)
         }
 
         if delay > e.Policy.MaxBackoff {

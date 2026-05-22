@@ -1,20 +1,21 @@
 package factories
 
 import (
-	"conecto/core"
 	"conecto/core/statestores"
+	"conecto/states"
+	"database/sql"
 	"fmt"
 )
 
 type StateStore struct{
 	StateStoreConfig StateStoreConfig
-	DBConnection DBConnection
+	connections Connections
 }
 
-func NewStateStore(stateStoreConfig StateStoreConfig, dbConnection DBConnection) *StateStore {
+func NewStateStore(stateStoreConfig StateStoreConfig, connections Connections) *StateStore {
 	return &StateStore {
 		StateStoreConfig: stateStoreConfig,
-		DBConnection: dbConnection,
+		connections: connections,
 	}
 }
 
@@ -25,15 +26,16 @@ func (c *StateStore) Build() statestores.StateStore {
 	var stateStore statestores.StateStore
 	switch c.StateStoreConfig.Type {
 		case MemoryStateStore:
-			stateStore = &statestores.MemoryStateStore{
-				Store :  map[string]core.State{},				
+			stateStore = &states.MemoryStateStore{
+				Store :  map[string]statestores.State{},				
 			}
 		case PostgresStateStore:
-			stateStore = &statestores.PostgresStateStore{
-				DB: c.DBConnection.DB,
+			connection:= c.connections[c.StateStoreConfig.Source].OpenDB()	
+			stateStore = &states.PostgresStateStore{
+				DB: connection,
 			}
 			if c.StateStoreConfig.AutoCreate {
-				c.createPostgresTableStore()
+				createPostgresTableStore(c.StateStoreConfig, connection)
 			}
 
 		default: panic("Unkown state store type")
@@ -41,7 +43,7 @@ func (c *StateStore) Build() statestores.StateStore {
 	return stateStore
 }
 
-func (c *StateStore) createPostgresTableStore() {
+func createPostgresTableStore(config StateStoreConfig, db *sql.DB) {
 	query := `
 	CREATE TABLE IF NOT EXISTS %s (
 		id SERIAL PRIMARY KEY,
@@ -51,7 +53,7 @@ func (c *StateStore) createPostgresTableStore() {
 		updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 	)
 	`
-	_, err := c.DBConnection.DB.Exec(fmt.Sprintf(query, c.StateStoreConfig.Name))
+	_, err := db.Exec(fmt.Sprintf(query, config.Name))
 	if err != nil {
 		panic(err)
 	}

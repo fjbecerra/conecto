@@ -1,19 +1,16 @@
 package factories
 
 import (
-	"conecto/core"
-	"conecto/core/connectors/rest"
-	"conecto/core/connectors/rest/auths"
+	"conecto/connectors/rest"
+	"conecto/connectors/rest/auths"
 	"conecto/core/engines"
-	"conecto/core/sinks"
-	"conecto/core/statestores"
+	"conecto/sinks/memory"
+	"conecto/states"
 	"context"
 	"errors"
 	"os"
 	"time"
-
 	"testing"
-
 	"github.com/joho/godotenv"
 )
 
@@ -27,30 +24,26 @@ func TestMain(m *testing.M) {
 }
 
 func TestMockedFbAdInsightPipelineRawData(t *testing.T) {	
+	context := context.Background()
 	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline_raw_data.json")
 	pipeline:= BuildPipeline(config)
-	runtime:= core.Runtime{
-		PipelineId: config.RuntimeConfig.PipelineId,
-		Provider: "facebook_ad_insight",
-		Context: context.Background(),
-	}
-
-	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",
 		Expiry: time.Now(),
 	}
-	error:= tokenStore.Save(runtime, token)
+	error:= tokenStore.Save(context, config.ID, token)
 	if error != nil {
 		t.Error(error.Error())
 	}	
-	error= pipeline.Run(runtime)
+	error= pipeline.Run(context)
 	if error != nil {
 		t.Error(error.Error())
 	}
 
-	memSink := pipeline.CommitStrategy.(*engines.AtLeastOnceCommitStrategy).Sink.(*sinks.SinkMemory)
+	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 	
 	if len(memSink.Mstore) != 4 {
 		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
@@ -58,32 +51,29 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 }
 
 func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {	
+	context := context.Background()
 	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline_flattened_data.json")
 
 	pipeline:= BuildPipeline(config)
-	runtime:= core.Runtime{
-		PipelineId: config.RuntimeConfig.PipelineId,
-		Provider: "facebook_ad_insight",
-		Context: context.Background(),
-	}
 
-	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",
 		Expiry: time.Now(),
 	}
-	error:= tokenStore.Save(runtime, token)
+	error:= tokenStore.Save(context, config.ID, token)
 	if error != nil {
 		t.Error(error.Error())
 	}		
 
-	error= pipeline.Run(runtime)
+	error= pipeline.Run(context)
 	if error != nil {
 		t.Error(error.Error())
 	}
 
-	memSink := pipeline.CommitStrategy.(*engines.AtLeastOnceCommitStrategy).Sink.(*sinks.SinkMemory)
+	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 	
 	if len(memSink.Mstore) != 4 {
 		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
@@ -102,23 +92,18 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	pipeline := BuildPipeline(cfg)
 
-	sink := pipeline.CommitStrategy.(*engines.AtLeastOnceCommitStrategy).Sink.(*sinks.SinkMemory)
+	sink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 
-	store := pipeline.CommitStrategy.(*engines.AtLeastOnceCommitStrategy).StateStore.(*statestores.MemoryStateStore)
+	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
 
-	runtime:= core.Runtime{
-		PipelineId: "test",
-		Provider: "facebook_ad_insight",
-		Context: context.Background(),
-	}
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 
-	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",
 		Expiry: time.Now(),
 	}
-	er:= tokenStore.Save(runtime, token)
+	er:= tokenStore.Save(ctx,cfg.ID, token)
 	if er != nil {
 		t.Error(er.Error())
 	}	
@@ -127,7 +112,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	errCh := make(chan error, 1)
 
 	go func() {
-		errCh <- pipeline.Run(runtime)
+		errCh <- pipeline.Run(ctx)
 	}()
 
 	// GIVE PIPELINE TIME TO PROCESS SOME DATA
@@ -146,12 +131,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	}
 
 	// VERIFY CHECKPOINT EXISTS
-	state, err := store.Load(
-		core.Runtime{
-				Context:    ctx,
-				PipelineId: "test",
-			},
-	)
+	state, err := store.Load(ctx, cfg.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +141,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	_ = state
 
 	// RESTART PIPELINE
-	err = pipeline.Run(runtime)
+	err = pipeline.Run(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,23 +158,20 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 // //todo run containers when integrations tests run
 // //this tests depends on postgres container. 
 func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
+	context := context.Background()
 	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_pipeline_with_db.json")
 	pipeline:= BuildPipeline(config)
-	runtime:= core.Runtime{
-		PipelineId: "test",
-		Context: context.Background(),
-	}
-	tokenStore:= pipeline.ConnectorEngine.Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",
 		Expiry: time.Now(),
 	}
-	er:= tokenStore.Save(runtime, token)
+	er:= tokenStore.Save(context,config.ID, token)
 	if er != nil {
 		t.Error(er.Error())
 	}	
-	error:= pipeline.Run(runtime)
+	error:= pipeline.Run(context)
 	if error != nil {
 		t.Error(error.Error())
 	}

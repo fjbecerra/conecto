@@ -1,7 +1,0 @@
-package engines
-
-import "context"
-
-type Shutdowner interface {
-    Shutdown(ctx context.Context) error
-} 

@@ -1,7 +1,8 @@
 package factories
 
 import (
-	"conecto/core/transformers"
+	"conecto/core"
+	"conecto/transformers"
 	
 )
 
@@ -20,8 +21,8 @@ func NewTransform(config []TransformerConfig, fieldsSpecsConfig map[string]Field
  	}
 }
 
-func (t * Transformer) Build() transformers.Transformer {
-	tranformers := 	[]transformers.Transformer{}
+func (t * Transformer) Build() core.Transformer {
+	tranformers := 	[]core.Transformer{}
 	for _, tCfg := range t.Config {
 		switch tCfg.Type {
 			case TransformerExtractor : 
@@ -31,12 +32,12 @@ func (t * Transformer) Build() transformers.Transformer {
 					panic("unsupported source type")
 		}
 	}
-	return &transformers.Chain{
+	return &core.Chain{
 		Steps : tranformers,
 	}	
 }
 
-func buildExtractor(fieldsSpecs FieldsSpecs) transformers.Transformer {
+func buildExtractor(fieldsSpecs FieldsSpecs) core.Transformer {
 	return &transformers.Extractor{
 				Fields : transformers.Fields(fieldsSpecs),
 				Selector: &transformers.GJSONSelector{},
