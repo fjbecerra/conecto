@@ -2,22 +2,26 @@ package engines
 
 import (
 	"conecto/core"
-	"conecto/core/connectors"
 	"conecto/core/retry"
+	"conecto/core/statestores"
 	"context"
 )
 
-
+type ConnectorRunnable interface {
+	Run(context context.Context, state statestores.State, out chan<- core.Batch, ID string) error
+	Shutdown(ctx context.Context) error
+}
 
 type ConnectorEngine struct {
-	Connector connectors.Connector
+	Connector core.Connector
 	Retry retry.Executor
 }
 
 func (e *ConnectorEngine) Run(
-	runtime core.Runtime,
-	state core.State,
+	context context.Context,
+	state statestores.State,
 	out chan<- core.Batch,
+	ID string,
 ) error {
 
 	current := state.Cursor
@@ -26,9 +30,9 @@ func (e *ConnectorEngine) Run(
 	var batch core.Batch
 
 	for {
-		 err := e.Retry.Do(runtime.Context, func() error {
+		 err := e.Retry.Do(context, func() error {
     		var err error
-    		batch, err = e.Connector.FetchBatch(runtime, current)
+    		batch, err = e.Connector.FetchBatch(context, current, ID)
     		return err
 		})
 		if err != nil {
@@ -50,8 +54,8 @@ func (e *ConnectorEngine) Run(
 			Cursor: batch.Cursor,
 			IsLast: isLast,
 		}:
-		case <-runtime.Context.Done():
-			return runtime.Context.Err()
+		case <-context.Done():
+			return context.Err()
 		}
 
 		current = batch.Cursor

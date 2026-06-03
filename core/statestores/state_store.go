@@ -1,13 +1,13 @@
 package statestores
 
 import (
-	"conecto/core"
 	"conecto/core/commands"
+	"context"
 )
 
 type StateStore interface {
-	Load(runtime core.Runtime) (core.State, error)
-	Save(runtime core.Runtime, state core.State) ([]commands.Command, error)
+	Load(runtime context.Context, ID string) (State, error)
+	Save(runtime context.Context, ID string, state State) ([]commands.Command, error)
 	Close()error
 }
 

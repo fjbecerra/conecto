@@ -2,13 +2,14 @@ package factories
 
 import (
 	"conecto/core"
-	"conecto/core/commands"
+	"conecto/core/codecs"
 	"conecto/core/engines"
 	"conecto/core/retry"
-	"conecto/core/sinks"
-	"conecto/core/sinks/codecs"
-	"conecto/core/sinks/databases"
 	"conecto/core/statestores"
+	"conecto/sinks"
+	"conecto/sinks/base/db"
+	"conecto/sinks/memory"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -19,23 +20,23 @@ import (
 type Sink struct {
 	Config SinkConfig
 	FieldsSpecsConfigs map[string]FieldsSpecs
-	RandFn func() float64
+	random retry.Random
 	StateStore statestores.StateStore
-	DBConnection DBConnection
+	connections Connections
 }
 
-func NewSink(config SinkConfig, fieldsSpecsConfigs map[string]FieldsSpecs, randFn func() float64, stateStore statestores.StateStore, DBConnection DBConnection) *Sink{
+func NewSink(config SinkConfig, fieldsSpecsConfigs map[string]FieldsSpecs, random retry.Random, stateStore statestores.StateStore, connections Connections) *Sink{
 	return &Sink{
 		Config: config,
 		FieldsSpecsConfigs: fieldsSpecsConfigs,
-		RandFn: randFn,
+		random: random,
 		StateStore: stateStore,
-		DBConnection: DBConnection,
+		connections: connections,
 	}
 }
 
-func (s * Sink) Build() engines.CommitStrategy {
-	var sink  sinks.Sink
+func (s * Sink) Build() engines.SinkCommiter {
+	var sink  core.Sink
 	retryPolicy:= retry.Policy{
 		MaxRetries: s.Config.Retry.MaxRetries,
 		InitialBackoff: time.Duration(s.Config.Retry.BackoffMS),
@@ -44,29 +45,42 @@ func (s * Sink) Build() engines.CommitStrategy {
 	}
 	retryExecutor := retry.Executor {
 		Policy: retryPolicy,
-		Rand: s.RandFn,
+		Random: s.random,
 	}
 	switch s.Config.Type {
 		case PostgresSink:
-			sink = buildPostgres(s.Config.SchemaConfig, s.FieldsSpecsConfigs)			
+			sink = buildPostgres(s.Config.SchemaConfig, s.FieldsSpecsConfigs)	
+			connection:= s.connections[s.Config.Source].OpenDB()	
 			if s.Config.SchemaConfig.AutoCreate{
-				s.createPostgresTable(s.Config.SchemaConfig.Table, s.FieldsSpecsConfigs[s.Config.SchemaConfig.FieldsSpecs])
-			}			
-			return &engines.Transactional{
-				DB: s.DBConnection.DB,
-				Sink: sink,
+				createPostgresTable(s.Config.SchemaConfig.Table, s.FieldsSpecsConfigs[s.Config.SchemaConfig.FieldsSpecs],connection)
+			}
+				
+			sqlExecutor := db.SQLExecutor{
+				OpenTransaction: func() *sql.Tx {
+					tx, err := connection.Begin()
+					if err != nil {
+						panic(err)
+					}
+					return tx
+				},
+			}		
+			return &engines.SinkEngine{
+				Sink: sink,				
+				SinkRetry: retryExecutor,
 				StateStore: s.StateStore,
-				Retry: retryExecutor,
-			}	
+				StateStoreRetry: retryExecutor,
+				Executor: &sqlExecutor,
+			}			 
 		case MemorySink:
 			
 			sink = buildSinkMemory()
-			return &engines.AtLeastOnceCommitStrategy{
+			
+			return &engines.SinkEngine{
 				SinkRetry: retryExecutor,
 				Sink: sink,
 				StateStore: s.StateStore,
 				StateStoreRetry: retryExecutor,
-				Executor: &commands.MemoryCommandExecutor{
+				Executor: &memory.MemoryExecutor{
 					Store: &[]core.Event{},
 				},
 			}
@@ -76,43 +90,43 @@ func (s * Sink) Build() engines.CommitStrategy {
 	
 }
 
-func  buildSinkMemory() *sinks.SinkMemory {	 
+func  buildSinkMemory() *memory.SinkMemory {	 
 	mstore:= []map[string]interface{}{}
 	 jsonCodec := codecs.JSONCodec{}	
-	return sinks.NewMemorySink(mstore, &jsonCodec)
+	return memory.NewMemorySink(mstore, &jsonCodec)
 }
 
 
-func buildPostgres(schemaConfig SchemaConfig, fieldsSpecsConfig map[string]FieldsSpecs)*databases.Rdbs{
+func buildPostgres(schemaConfig SchemaConfig, fieldsSpecsConfig map[string]FieldsSpecs)*db.Rdbs{
 	jsonCodec := codecs.JSONCodec{}
-	adapter := databases.PostgresAdapter{Codec: &jsonCodec}
+	adapter := sinks.Postgres{Codec: &jsonCodec, Upsert: true }
 	
-	return &databases.Rdbs{
+	return &db.Rdbs{
 		Schema: buildSchema(schemaConfig.Table, fieldsSpecsConfig[schemaConfig.FieldsSpecs]),
 		Adapter: &adapter,
 	}
 }
 
-func buildSchema(tableName string, fieldsSpecs FieldsSpecs) databases.Schema {
+func buildSchema(tableName string, fieldsSpecs FieldsSpecs) db.Schema {
 	columns := []string{}
 	for name, _ := range fieldsSpecs {		
 		columns = append(columns, name)
 	}
-	metadata := []databases.Metadata{
-		databases.Metadata{
+	metadata := []db.Metadata{
+		db.Metadata{
 			Column: "__pipeline_id",
 			Unique: true,
 		},
-		databases.Metadata{
+		db.Metadata{
 			Column: "__event_id",
 			Unique: true,
 		},
-		databases.Metadata{
+		db.Metadata{
 			Column: "__ingested_at",
 			Unique: false,
 		},
 	}	
-	return databases.Schema{
+	return db.Schema{
 		Table: tableName,
 		Columns: columns,
 		Metadata: metadata,
@@ -128,7 +142,7 @@ var pgTypes = map[string]string{
 	"int64":   "BIGINT",
 }
 
-func (s * Sink) createPostgresTable(tableName string, specs FieldsSpecs){
+func createPostgresTable(tableName string, specs FieldsSpecs, db *sql.DB){
 
 	columns := []string{
 
@@ -179,7 +193,7 @@ func (s * Sink) createPostgresTable(tableName string, specs FieldsSpecs){
 	// add unique constraint
 	columns = append(
 		columns,
-		"    CONSTRAINT unique_constrains UNIQUE (__event_id, __pipeline_id)",
+		"    CONSTRAINT unique_constrains UNIQUE (__event_id)",
 	)
 
 	query := fmt.Sprintf(`
@@ -188,7 +202,7 @@ func (s * Sink) createPostgresTable(tableName string, specs FieldsSpecs){
 	);
 	`, tableName, strings.Join(columns, ",\n"))
 
-	_, err := s.DBConnection.DB.Exec(query)
+	_, err := db.Exec(query)
 	if err != nil {
 		panic(err)
 	}

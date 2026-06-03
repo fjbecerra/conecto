@@ -1,4 +1,5 @@
 {
+  "pipeline_id" : "homysur_facebook_ads",
   "connector" : {
     "type" : "mocked_rest",
     "retry": {
@@ -64,7 +65,6 @@
       }
   },
   "runtime": {
-    "pipeline_id" : "homysur_facebook_ads",
     "state_store": {
       "type" : "memory"
     }

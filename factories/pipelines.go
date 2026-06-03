@@ -2,30 +2,27 @@ package factories
 
 import (
 	"conecto/core/engines"
-	"math/rand/v2"
-	"time"
+	"conecto/core/pipeline"
 )
 
-
-
-func BuildPipeline(config ConfigPipeline) engines.Pipeline{
-	seed := time.Now().UnixNano()
-
-	r := rand.New(rand.NewPCG(
-		uint64(seed),
-		uint64(seed>>1),
-	))
-
-	connection:= NewDatabase(config.DatabaseConfig).Build()
-	connector := NewConnector(config.ConnectorConfig, r.Float64, connection).Build()
-	transform := NewTransform(config.TransformersConfig, config.FieldsSpecsConfig, config.RuntimeConfig).Build()
-	stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, connection).Build()
-	sink := NewSink(config.SinkConfig, config.FieldsSpecsConfig, r.Float64, stateStore, connection).Build()
+func BuildPipeline(config ConfigPipeline) pipeline.Pipeline{
 	
-	return engines.Pipeline{
-		ConnectorEngine: &connector,
-		CommitStrategy:  sink,
+	random:= &RandomImpl{}
+	connections:= NewSource(config.SourcesConfig).Build()
+	connectorRunnable := NewConnector(config.ConnectorConfig, random, connections).Build()
+	transform := NewTransform(config.TransformersConfig, config.FieldsSpecsConfig, config.RuntimeConfig).Build()
+	stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, connections).Build()
+	sinkCommiter := NewSink(config.SinkConfig, config.FieldsSpecsConfig, random, stateStore, connections).Build()
+	
+	engine := engines.Engine {
+		ConnectorRunnable: connectorRunnable,
         Transformer: transform,
+		SinkCommiter: sinkCommiter,
+	}
+
+	return pipeline.Pipeline{
+		ID: config.ID,
+		Engine: &engine,
         StateStore: stateStore,
 	}
 }

@@ -1,12 +1,12 @@
 package factories
 
 import (
-	"conecto/core/connectors/rest"
-	"conecto/core/connectors/rest/auths"
-	"conecto/core/connectors/rest/auths/stores"
+	"conecto/connectors/rest"
+	"conecto/connectors/rest/auths"
+	"conecto/connectors/rest/auths/stores"
 	"conecto/core/engines"
 	"conecto/core/retry"
-	"conecto/testutils"
+	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -15,23 +15,23 @@ import (
 )
 
 type Connector struct {
-	Config ConnectorConfig
-	RandFn func() float64
-	DBConnection DBConnection
+	config ConnectorConfig
+	random retry.Random
+	connections Connections
 
 }
 
-func NewConnector(config ConnectorConfig, randFn func() float64, dbConnection DBConnection) *Connector{
+func NewConnector(config ConnectorConfig, random retry.Random, connections Connections) *Connector{
 	return &Connector{
-		Config: config,
-		RandFn: randFn,
-		DBConnection: dbConnection,
+		config: config,
+		random: random,
+		connections: connections,
 	}
 }
 
-func (c *Connector)Build() engines.ConnectorEngine {
-	tokenProvider := buildTokenProvider(c.Config.RestConfig.AuthenticationConfig)
-	store := buildStore(c.Config.RestConfig.TokenStoreConfig, c.DBConnection)
+func (c *Connector)Build() engines.ConnectorRunnable {
+	tokenProvider := buildTokenProvider(c.config.RestConfig.AuthenticationConfig)
+	store := buildStore(c.config.RestConfig.TokenStoreConfig, c.connections)
 	v1, _ := base64.StdEncoding.DecodeString(
 		os.Getenv("TOKEN_ENCRYPTION_KEY_V1"),
 	)
@@ -42,47 +42,47 @@ func (c *Connector)Build() engines.ConnectorEngine {
 	tokenStore:= auths.NewADBTokenStore(store, keyManager)
 
 	var httpClient rest.IClient
-	switch c.Config.Type {
+	switch c.config.Type {
 		case Rest:
 			httpClient= &rest.HttpClient{
 				Client: http.DefaultClient,
 			}	
 		case MockedRest:
 			mockedPaths := map[int]string{}
-			for i, path := range c.Config.MockedRestConfig.ResponsePaths {
+			for i, path := range c.config.MockedRestConfig.ResponsePaths {
 				json,_ := os.ReadFile(path)
 				mockedPaths[i] = string(json)
 			}
-			httpClient = &testutils.MockHttpClient{
+			httpClient = &rest.MockHttpClient{
 				Calls: mockedPaths,
 			}
 		default:
-			panic("unknown source type: " + c.Config.Type)
+			panic("unknown source type: " + c.config.Type)
 	}
 	restClient := *rest.NewRestClient(httpClient, tokenProvider, tokenStore)
 	paginationProvider := rest.PaginationProvider{
 		RestClient : restClient,
-		BaseUrl: c.Config.RestConfig.BaseUrl,
-		DataPath: c.Config.RestConfig.DataConfig.Path,
-		ResponseNextPath: c.Config.RestConfig.PaginationConfig.Response.Next.Path,
-		RequestParam: c.Config.RestConfig.PaginationConfig.Request.Param,
+		BaseUrl: c.config.RestConfig.BaseUrl,
+		DataPath: c.config.RestConfig.DataConfig.Path,
+		ResponseNextPath: c.config.RestConfig.PaginationConfig.Response.Next.Path,
+		RequestParam: c.config.RestConfig.PaginationConfig.Request.Param,
 	}
 	connector := &rest.RESTConnector{
 		Provider: &paginationProvider,
 	}
 
 	retryPolicy:= retry.Policy{
-		MaxRetries: c.Config.Retry.MaxRetries,
-		InitialBackoff: time.Duration(c.Config.Retry.BackoffMS),
-		MaxBackoff: time.Duration(c.Config.Retry.MaxBackoff),
+		MaxRetries: c.config.Retry.MaxRetries,
+		InitialBackoff: time.Duration(c.config.Retry.BackoffMS),
+		MaxBackoff: time.Duration(c.config.Retry.MaxBackoff),
 		Jitter: true,
 	}
 	retryExecutor := retry.Executor {
 		Policy: retryPolicy,
-		Rand: c.RandFn,
+		Random: c.random,
 	}
 
-	return engines.ConnectorEngine{
+	return &engines.ConnectorEngine{
 		Connector: connector,
 		Retry: retryExecutor,
 	}
@@ -103,14 +103,15 @@ func buildTokenProvider(authenticationConfig AuthenticationConfig) auths.TokenPr
 	}
 }
 
-func buildStore(tokenStoreConfig TokenStoreConfig, dbConnection DBConnection) stores.Store{
+func buildStore(tokenStoreConfig TokenStoreConfig, connections Connections) stores.Store{
 	
 	switch tokenStoreConfig.Type{
 		case PostgresTokenStore:
+			connection:= connections[tokenStoreConfig.Source].OpenDB()
 			if(tokenStoreConfig.AutoCreate){
-				createTokenStoreTable(tokenStoreConfig, dbConnection)
-			}
-			return stores.NewPostgresTokenDB(dbConnection.DB)
+				createPostgresTokenStoreTable(tokenStoreConfig, connection)			}
+			
+			return stores.NewPostgresTokenDB(connection)
 		case MemoryTokenStore:
 			return stores.NewMemoryStoreToken(make(map[string]any))
 		default:
@@ -118,11 +119,10 @@ func buildStore(tokenStoreConfig TokenStoreConfig, dbConnection DBConnection) st
 	}
 }
 
-func createTokenStoreTable(tokenStoreConfig TokenStoreConfig, dbConnection DBConnection){
+func createPostgresTokenStoreTable(tokenStoreConfig TokenStoreConfig, db *sql.DB){
 	query := `
 		CREATE TABLE IF NOT EXISTS %s (
 			pipeline_id    TEXT NOT NULL,
-			provider       TEXT NOT NULL,
 
 			ciphertext     BYTEA NOT NULL,
 			nonce          BYTEA NOT NULL,
@@ -134,10 +134,10 @@ func createTokenStoreTable(tokenStoreConfig TokenStoreConfig, dbConnection DBCon
 			created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-			PRIMARY KEY (pipeline_id, provider)
+			PRIMARY KEY (pipeline_id)
 	);
 	`
-	_, err := dbConnection.DB.Exec(fmt.Sprintf(query, tokenStoreConfig.Name))
+	_, err := db.Exec(fmt.Sprintf(query, tokenStoreConfig.Name))
 	if err != nil {
 		panic(err)
 	}
