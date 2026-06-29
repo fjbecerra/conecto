@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 // //this tests depends on postgres container. 
 func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/ad_insight_pipeline_with_db.json")
+	config:= factories.LoadConfigPipeline("./testdata/ad_insight_pipeline_to_postgres.json")
 	pipeline:= factories.BuildPipeline(config)
 	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
