@@ -11,11 +11,11 @@
       "data": {
         "path" : "data",
         "is_array": true    
-      }, 
+      },
       "authentication" : {
         "type" : "query",
         "paramName" : "access_token"
-      },  
+      },   
       "pagination": {
         "type": "cursor",
         "request": {
@@ -29,15 +29,23 @@
       },
       "token_store":{
         "type": "memory"
-      }      
+      }
     },
     "mocked_rest":{
       "response_paths" : [
-        "./testdata/fb_ad_insights/response_page_1_action_product_id.json",
-        "./testdata/fb_ad_insights/response_page_2_action_product_id.json"
+        "./testdata/response_page_1_action_product_id.json",
+        "./testdata/response_page_2_action_product_id.json"
       ]
     }
   },
+  "transformers" : [
+    { 
+      "type":"extractor", 
+      "extractor":{
+        "fields": "default"
+      }
+    }
+  ],
   "sink" : {
     "type" : "memory",
     "batch_size" : 10,
@@ -46,7 +54,16 @@
       "backoff_ms": 500,
       "max_backoff" : 500
     }
-  },  
+  },
+  "fields_specs" : {
+    "default":{
+        "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
+        "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
+        "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
+        "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
+        "date_start": { "path": "date_start", "type": "int64", "required" : false, "default": null }
+      }
+  },
   "runtime": {
     "state_store": {
       "type" : "memory"

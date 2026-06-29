@@ -1,32 +1,30 @@
-package factories
+package unit_tests
 
 import (
 	"conecto/connectors/rest"
 	"conecto/connectors/rest/auths"
 	"conecto/core/engines"
+	"conecto/factories"
 	"conecto/sinks/memory"
 	"conecto/states"
 	"context"
 	"errors"
 	"os"
-	"time"
 	"testing"
-	"github.com/joho/godotenv"
+	"time"
 )
 
 func TestMain(m *testing.M) {
 
-	_ = godotenv.Load("../.env")
-
+   	os.Setenv("TOKEN_ENCRYPTION_KEY_V1", "z1Wbj51mq1GmIpmwAfLv9X5oSekOYEsC/9YXhOCuKjU=")
 	code := m.Run()
-
 	os.Exit(code)
 }
 
 func TestMockedFbAdInsightPipelineRawData(t *testing.T) {	
 	context := context.Background()
-	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline_raw_data.json")
-	pipeline:= BuildPipeline(config)
+	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_raw_data.json")
+	pipeline:= factories.BuildPipeline(config)
 	
 	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
@@ -52,9 +50,9 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 
 func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {	
 	context := context.Background()
-	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_test_pipeline_flattened_data.json")
+	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_flattened_data.json")
 
-	pipeline:= BuildPipeline(config)
+	pipeline:= factories.BuildPipeline(config)
 
 	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
 
@@ -86,11 +84,11 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cfg := LoadConfigPipeline(
-		"./testdata/fb_ad_insights/ad_insight_test_pipeline_flattened_data.json",
+	cfg := factories.LoadConfigPipeline(
+		"./testdata/ad_insight_test_pipeline_flattened_data.json",
 	)
 
-	pipeline := BuildPipeline(cfg)
+	pipeline := factories.BuildPipeline(cfg)
 
 	sink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 
@@ -155,26 +153,5 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	}
 }
 
-// //todo run containers when integrations tests run
-// //this tests depends on postgres container. 
-func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
-	context := context.Background()
-	config:= LoadConfigPipeline("./testdata/fb_ad_insights/ad_insight_pipeline_with_db.json")
-	pipeline:= BuildPipeline(config)
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
-	}
-	er:= tokenStore.Save(context,config.ID, token)
-	if er != nil {
-		t.Error(er.Error())
-	}	
-	error:= pipeline.Run(context)
-	if error != nil {
-		t.Error(error.Error())
-	}
-}
 
 

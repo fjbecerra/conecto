@@ -23,3 +23,12 @@ func (b *BearerTokenProvider) Apply(req *http.Request, token Token) error {
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	return nil
 }
+
+type HeaderTokenProvider struct {
+	HeaderName string
+}
+
+func (h *HeaderTokenProvider) Apply(req *http.Request, token Token) error {
+	req.Header.Set(h.HeaderName, token.AccessToken)
+	return nil
+}

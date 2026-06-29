@@ -36,8 +36,8 @@
     },
     "mocked_rest":{
       "response_paths" : [
-          "./testdata/fb_ad_insights/response_page_1_action_product_id.json",
-          "./testdata/fb_ad_insights/response_page_2_action_product_id.json"
+          "./testdata/response_page_1_action_product_id.json",
+          "./testdata/response_page_2_action_product_id.json"
       ]
     }
   },
