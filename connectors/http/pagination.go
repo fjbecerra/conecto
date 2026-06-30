@@ -1,4 +1,4 @@
-package rest
+package http
 
 type PageCursor struct {
 	Value string

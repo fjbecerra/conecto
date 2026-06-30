@@ -1,36 +1,32 @@
-package rest
+package http
 
 import (
-	"conecto/connectors/rest/auths"
+	"conecto/connectors/http/auths"
 	"context"
 	"net/http"
 )
 
-type RestClient struct{
+type Client struct{
 	Client 	IClient
 	TokenProvider auths.TokenProvider
 	TokenStore auths.TokenStore
 }
 
-func NewRestClient(client IClient, tokenProvicer auths.TokenProvider, tokenStore auths.TokenStore) *RestClient{
-    return &RestClient{
+func NewRestClient(client IClient, tokenProvicer auths.TokenProvider, tokenStore auths.TokenStore) *Client{
+    return &Client{
         Client: client,
 		TokenProvider: tokenProvicer,
 		TokenStore: tokenStore,
     }
 }
 
-func (c *RestClient) Fetch(context context.Context, url string, ID string) ([]byte, error) {
+func (c *Client) Fetch(context context.Context, req *http.Request, ID string) (*HttpResponse, error){
 
 	token, err := c.TokenStore.Get(context, ID)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(context, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
 	if c.TokenProvider != nil {
 		if err := c.TokenProvider.Apply(req, token); err != nil {
 			return nil, err
@@ -39,7 +35,7 @@ func (c *RestClient) Fetch(context context.Context, url string, ID string) ([]by
 	return c.Client.Fetch(req)
 }
 
-func (c *RestClient) Close() error{	
+func (c *Client) Close() error{	
 	err := c.TokenStore.Close()
 	if err!=nil{
 		return err

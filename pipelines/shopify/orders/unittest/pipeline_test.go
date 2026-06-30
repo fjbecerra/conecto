@@ -1,4 +1,4 @@
-package unit_tests
+package unittests
 
 import (
 	"conecto/connectors/rest"
@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 
 func TestMockedFbAdInsightPipelineRawData(t *testing.T) {	
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_raw_data_to_memory.json")
+	config:= factories.LoadConfigPipeline("./testdata/orders_test_pipeline_raw_data_to_memory.json")
 	pipeline:= factories.BuildPipeline(config)
 	
 	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
@@ -50,7 +50,7 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 
 func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {	
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_flattened_data_to_memory.json")
+	config:= factories.LoadConfigPipeline("./testdata/orders_test_pipeline_flattened_data_to_memory.json")
 
 	pipeline:= factories.BuildPipeline(config)
 
@@ -85,7 +85,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	defer cancel()
 
 	cfg := factories.LoadConfigPipeline(
-		"./testdata/ad_insight_test_pipeline_flattened_data_to_memory.json",
+		"./testdata/orders_test_pipeline_flattened_data_to_memory.json",
 	)
 
 	pipeline := factories.BuildPipeline(cfg)

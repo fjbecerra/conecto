@@ -1,4 +1,4 @@
-package rest
+package http
 
 import (
 	"io"
@@ -6,7 +6,7 @@ import (
 )
 
 type IClient interface {
-	Fetch(req *http.Request) ([]byte, error)
+	Fetch(req *http.Request) (*HttpResponse, error)
 	Close() error
 }
 
@@ -14,7 +14,7 @@ type HttpClient struct {
 	Client *http.Client
 }
 
-func (c *HttpClient) Fetch(req *http.Request) ([]byte, error) {	
+func (c *HttpClient) Fetch(req *http.Request) (*HttpResponse, error) {	
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
@@ -27,7 +27,11 @@ func (c *HttpClient) Fetch(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	return body, err
+	return &HttpResponse{
+		Body:    body,
+		Headers: resp.Header,
+		Status:  resp.StatusCode,
+	}, nil
 }
 
 func (c *HttpClient) Close() error{
