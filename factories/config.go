@@ -9,14 +9,30 @@ type ConnectorConfig struct{
 	Type ConnectorType `json:"type"`	
 	Retry RetryConfig `json:"retry"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
+	GraphqlConfig *GraphqlConfig `json:"graphql,omitempty"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
 }
+
 type RestConfig struct{	
 	BaseUrl string `json:"base_url"`
 	DataConfig DataConfig `json:"data"`
     PaginationConfig PaginationConfig `json:"pagination"`
 	TokenStoreConfig TokenStoreConfig `json:"token_store"`
 	AuthenticationConfig AuthenticationConfig `json:"authentication"`	
+}
+
+type GraphqlConfig struct {
+	BaseUrl string `json:"base_url"`
+	Query 	string `json:"query"`
+	DataConfig DataConfig `json:"data"`
+    PaginationConfig GraphqlPaginationConfig `json:"pagination"`
+	TokenStoreConfig TokenStoreConfig `json:"token_store"`
+	AuthenticationConfig AuthenticationConfig `json:"authentication"`
+}
+
+type GraphqlPaginationConfig struct {
+	HasMorePath string `json:"has_more_path"`
+	CursorPath  string `json:"cursor_path"`
 }
 
 type DataConfig struct {
@@ -47,9 +63,7 @@ type TokenStoreConfig struct {
 
 type AuthenticationConfig struct{
 	Type string `json:"type"`
-	QueryToken struct {
-		ParamName string `json:"param_name"`
-	}`json:"query_token"`
+	ParamName string `json:"param_name"`	
 }
 
 type MockedRestConfig struct{
@@ -138,6 +152,7 @@ func LoadConfigPipeline(path string) ConfigPipeline{
 type ConnectorType string
 const (
 	Rest 	   ConnectorType = "rest"
+	Graphql	   ConnectorType = "graphql"
 	MockedRest ConnectorType = "mocked_rest"
 )
 

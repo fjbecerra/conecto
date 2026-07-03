@@ -1,0 +1,18 @@
+{
+  "data" : {
+    "orders": {
+      "edges": [
+        {
+          "cursor": "cursor-2",
+          "node": {
+            "id": "gid://shopify/Order/2"
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "cursor-2"
+      }
+    }
+  }
+}

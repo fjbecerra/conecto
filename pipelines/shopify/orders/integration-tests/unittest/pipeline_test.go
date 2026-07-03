@@ -1,9 +1,9 @@
 package unittests
 
 import (
-	"conecto/connectors/rest"
-	"conecto/connectors/rest/auths"
 	"conecto/core/engines"
+	"conecto/connectors/_http"
+	"conecto/connectors/_http/auths"
 	"conecto/factories"
 	"conecto/sinks/memory"
 	"conecto/states"
@@ -21,12 +21,12 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestMockedFbAdInsightPipelineRawData(t *testing.T) {	
+func TestMockedOrdersipelineRawData(t *testing.T) {	
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/orders_test_pipeline_raw_data_to_memory.json")
+	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_raw_data_to_memory.json")
 	pipeline:= factories.BuildPipeline(config)
 	
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",
@@ -48,13 +48,13 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 	}	
 }
 
-func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {	
+func TestMockedOrdersPipelineFlattened(t *testing.T) {	
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/orders_test_pipeline_flattened_data_to_memory.json")
+	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_flattened_data_to_memory.json")
 
 	pipeline:= factories.BuildPipeline(config)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 
 	token:= auths.Token{
 		AccessToken : "any-token",
@@ -94,7 +94,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 
 	token:= auths.Token{
 		AccessToken : "any-token",

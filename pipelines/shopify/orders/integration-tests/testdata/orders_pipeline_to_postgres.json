@@ -1,0 +1,88 @@
+{
+  "pipeline_id": "facbook_insights_homy",
+  "connector" : {
+    "type" : "mocked_rest",
+    "retry": {
+      "max_retries": 3,
+      "backoff_ms": 500,
+      "max_backoff" : 500
+    },
+    "graphql":{
+      "data": {
+        "path" : "data.orders.edges",
+        "is_array": true    
+      }, 
+      "authentication" : {
+        "type" : "header",
+        "paramName" : "shopify-xx"
+      }, 
+      "pagination": {
+        "has_more_path": "data.orders.pageInfo.hasNextPage",
+        "cursor_path": "data.orders.pageInfo.endCursor"
+      },
+      "token_store":{
+        "type": "postgres",
+        "auto_create" : true,
+        "name":"oauth_tokens",
+        "source" : "source1"
+      }
+    },
+    "mocked_rest":{
+      "response_paths" : [
+          "./testdata/response_page_1_action_product_id.json",
+          "./testdata/response_page_2_action_product_id.json"
+      ]
+    }
+  },
+  "transformers" : [
+    { 
+      "type":"extractor", 
+      "extractor":{
+        "fields": "default"
+      }
+    }
+  ],
+  "sink" : {
+    "type" : "postgres",
+    "batch_size" : 10,
+    "retry": {
+      "max_retries": 3,
+      "backoff_ms": 500,
+      "max_backoff" : 500
+    },
+    "schema" : {
+        "table" : "FB_AD_INSIGHTS_PRODUCT",
+        "fields_specs" : "default",
+        "auto_create" : true       
+    },
+    "source" : "source1"
+  },
+  
+  "fields_specs" : {
+    "default":{
+        "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
+        "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
+        "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
+        "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
+        "date_start": { "path": "date_start", "type": "time", "required" : false, "default": null }
+      }
+  },
+  "runtime": {
+    "state_store": {
+      "type" : "postgres",
+      "name" : "pipeline_state",
+      "auto_create": true,
+      "source" : "source1"
+    }
+  },
+  "sources" : {
+    "source1": {
+      "type": "postgres",
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+    },
+     "source2": {
+      "type": "postgres",
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+    }
+  }
+}
