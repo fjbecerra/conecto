@@ -1,9 +1,10 @@
 package factories
 
 import (
-	"conecto/connectors/rest"
-	"conecto/connectors/rest/auths"
-	"conecto/connectors/rest/auths/stores"
+	"conecto/connectors/_http"
+	"conecto/connectors/_http/auths"
+	"conecto/connectors/_http/auths/stores"
+	"conecto/connectors/_http/rest"
 	"conecto/core/engines"
 	"conecto/core/retry"
 	"database/sql"
@@ -41,10 +42,10 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 	keyManager:=auths.NewStaticKeyManager(keys, "v1")
 	tokenStore:= auths.NewADBTokenStore(store, keyManager)
 
-	var httpClient rest.IClient
+	var httpClient _http.IClient
 	switch c.config.Type {
 		case Rest:
-			httpClient= &rest.HttpClient{
+			httpClient= &_http.HttpClient{
 				Client: http.DefaultClient,
 			}	
 		case MockedRest:
@@ -53,21 +54,45 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 				json,_ := os.ReadFile(path)
 				mockedPaths[i] = string(json)
 			}
-			httpClient = &rest.MockHttpClient{
+			httpClient = &_http.MockHttpClient{
 				Calls: mockedPaths,
 			}
 		default:
 			panic("unknown source type: " + c.config.Type)
 	}
-	restClient := *rest.NewRestClient(httpClient, tokenProvider, tokenStore)
-	paginationProvider := rest.PaginationProvider{
-		RestClient : restClient,
-		BaseUrl: c.config.RestConfig.BaseUrl,
-		DataPath: c.config.RestConfig.DataConfig.Path,
-		ResponseNextPath: c.config.RestConfig.PaginationConfig.Response.Next.Path,
-		RequestParam: c.config.RestConfig.PaginationConfig.Request.Param,
+	client := *_http.NewClient(httpClient, tokenProvider, tokenStore)
+	
+
+	builder := rest.RestRequestBuilder{
+		BaseURL: c.config.RestConfig.BaseUrl,
+		CursorParam: c.config.RestConfig.PaginationConfig.Response.Next.Path,
+		Method: "GET",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	}
-	connector := &rest.RESTConnector{
+
+	dataExtractor := rest.RestDataExtractor{
+			Path: c.config.RestConfig.DataConfig.Path,
+	}
+
+	cursorExtractor := _http.JSONCursorExtractor{
+		Path:  c.config.RestConfig.PaginationConfig.Request.Param,
+	}
+	// paginationProvider := _http.PaginationProvider{
+	// 	RestClient : restClient,
+	// 	BaseUrl: c.config.RestConfig.BaseUrl,
+	// 	DataPath: c.config.RestConfig.DataConfig.Path,
+	// 	ResponseNextPath: c.config.RestConfig.PaginationConfig.Response.Next.Path,
+	// 	RequestParam: c.config.RestConfig.PaginationConfig.Request.Param,
+	// }
+	paginationProvider := _http.PaginationProvider{
+		Client : &client,
+		Builder: &builder,
+		Data: &dataExtractor,
+		Cursor: &cursorExtractor,
+  }
+	connector := &_http.HttpConnector{
 		Provider: &paginationProvider,
 	}
 

@@ -2,7 +2,6 @@ package rest
 
 import (
 	"encoding/json"
-
 	"github.com/tidwall/gjson"
 )
 

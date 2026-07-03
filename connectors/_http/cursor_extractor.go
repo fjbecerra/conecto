@@ -1,4 +1,4 @@
-package http
+package _http
 
 import (
 	"regexp"
@@ -25,33 +25,6 @@ func (e *JSONCursorExtractor) Extract(resp *HttpResponse,) (*PageCursor, bool) {
 
 	return &PageCursor{
 		Value: next,
-	}, true
-
-}
-
-type GraphQLCursorExtractor struct {
-	HasMorePath string
-	CursorPath string
-}
-
-func (e *GraphQLCursorExtractor) Extract(resp *HttpResponse,) (*PageCursor, bool) {
-
-	hasMore := gjson.GetBytes(
-		resp.Body,
-		e.HasMorePath,
-	).Bool()
-
-	if !hasMore {
-		return nil, false
-	}
-
-	cursor := gjson.GetBytes(
-		resp.Body,
-		e.CursorPath,
-	).String()
-
-	return &PageCursor{
-		Value: cursor,
 	}, true
 
 }

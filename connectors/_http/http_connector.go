@@ -1,4 +1,4 @@
-package http
+package _http
 
 import (
 	"conecto/core"
@@ -7,11 +7,11 @@ import (
 	"fmt"
 )
 
-type RESTConnector struct {
+type HttpConnector struct {
 	Provider *PaginationProvider
 }
 
-func (c *RESTConnector) FetchBatch(context context.Context, state statestores.Cursor, ID string) (core.Batch, error) {
+func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cursor, ID string) (core.Batch, error) {
 	fmt.Println("SOURCE: sending event")
 	var pc *PageCursor
 
@@ -47,6 +47,6 @@ func (c *RESTConnector) FetchBatch(context context.Context, state statestores.Cu
 	}, nil
 }
 
-func (c *RESTConnector) Close() error {	
+func (c *HttpConnector) Close() error {	
     return c.Provider.Close()
 }

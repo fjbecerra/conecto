@@ -2,7 +2,6 @@
   "connector" : {
     "type" : "rest",
     "rest" :{
-      "base_url": "xxx",
       "authentication" : {
         "type" : "query",
         "paramName" : "access_token"
@@ -27,17 +26,24 @@
       "max_retries": 3,
       "backoff_ms": 500,
       "max_backoff" : 500
+    },
+    "streams": {
+      "ad_insights": {
+        "base_url": "xxx",
+        "schema": {
+          "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
+          "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
+          "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
+          "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
+          "date_start": { "path": "date_start", "type": "int64", "required" : false, "default": null }
+        },
+        "destination": "ad_insights",
+        "key_fields": ["product_id", "date_start"],
+        "workers" : 5     
+      }
     }
+    
   },
-  "transformers" : [
-    { 
-      "type":"extractor",
-      "extractor": { 
-        "fields": "fields_config"
-      },
-      "workers" : 5
-    }
-  ],
   "sink" : {
     "type" : "rdbs",
     "batch_size" : 10,
@@ -48,22 +54,27 @@
     },
     "rdbs" : {
         "db_type" : "postgres",
-        "dsn" : "",
-        "table" : "",
-        "schema" : "fields_config",
-        "upsert" : "product_id,date_start"
+        "dsn" : ""
        
     } 
   },
 
-  "additional_configs": {
-    "event_buffer_size" : 10,
-    "fields_config" : {
-      "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
-      "clicks": { "path": "clicks", "type": "int", "required" : false, "default": 0 },
-      "impressions": { "path": "impressions", "type": "int", "required" : false, "default": 0 },
-      "product_id": { "path": "product_id", "type": "int", "required" : false, "default": 0 },
-      "date_start": { "path": "date_start", "type": "time", "required" : false, "default": 0 }
+  "runtime": {
+    "state_store": {
+      "type" : "postgres",
+      "name" : "pipeline_state",
+      "auto_create": true,
+      "source" : "source1"
+    }
+  },
+  "sources" : {
+    "source1": {
+      "type": "postgres",
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+    },
+     "source2": {
+      "type": "postgres",
+      "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
     }
   }
 

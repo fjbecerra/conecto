@@ -1,8 +1,9 @@
 package rest
 
 import (
-	"conecto/connectors/rest/auths"
-	"conecto/connectors/rest/auths/stores"
+	"conecto/connectors/_http/auths"
+	"conecto/connectors/_http/auths/stores"
+	"conecto/connectors/_http"
 	"conecto/core/statestores"
 	"context"
 	"encoding/base64"
@@ -31,27 +32,44 @@ func TestEmit5ElementsOverPaginating(t *testing.T) {
 		t.Error(error.Error())
 	}		
 
-	mockClient := MockHttpClient{
+	mockClient := _http.MockHttpClient{
 		Calls: map[int]string {
-				0:page1,
+				0:page1,			
 		},
 	}
-  restClient:= RestClient{
+  client:= _http.Client{
     Client: &mockClient,
     TokenProvider: &auths.QueryTokenProvider{
 				ParamName: "token",
 		},
     TokenStore: tokenStore,
   }
-	paginationProvider := PaginationProvider{
-		RestClient : restClient,
-    BaseUrl: "http://anyurl.com",
-    DataPath: "data",
-    ResponseNextPath: "paging.cursors.after",
-		RequestParam: "after",
+
+  builder := RestRequestBuilder{
+		BaseURL: "http://anyurl.com",
+		CursorParam:"after",
+		Method: "GET",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
   }
 
-	connector := RESTConnector {
+  dataExtractor := RestDataExtractor{
+		Path: "data",
+  }
+
+  cursorExtractor := _http.JSONCursorExtractor{
+	Path: "paging.cursors.after",
+}
+
+  paginationProvider := _http.PaginationProvider{
+		Client : &client,
+		Builder: &builder,
+		Data: &dataExtractor,
+		Cursor: &cursorExtractor,
+  }
+
+	connector := _http.HttpConnector {
 		Provider: &paginationProvider,
 	}
 
@@ -75,23 +93,4 @@ var page1 = `{
       "after": "cursor-1"
     }
   }
-}`
-
-var page2 = `{
-  "data": [
-    {"clicks": 3},
-    {"clicks": 4}
-  ],
-  "paging": {
-    "cursors": {
-      "after": "cursor-2"
-    }
-  }
-}`
-
-var page3 = `{
-  "data": [
-    {"clicks": 5}
-  ],
-  "paging": {}
 }`

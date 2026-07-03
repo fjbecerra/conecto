@@ -36,7 +36,19 @@
         "./testdata/response_page_1_action_product_id.json",
         "./testdata/response_page_2_action_product_id.json"
       ]
+    },
+    "streams": {
+      "ad_insights": {
+        "schema": {
+          "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
+          "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
+          "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
+          "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
+          "date_start": { "path": "date_start", "type": "int64", "required" : false, "default": null }
+        }        
+      }
     }
+      
   },
   "transformers" : [
     { 

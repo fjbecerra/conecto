@@ -1,8 +1,8 @@
 package factories
 
 import (
-	"conecto/connectors/rest"
-	"conecto/connectors/rest/auths"
+	"conecto/connectors/_http"
+	"conecto/connectors/_http/auths"
 	"conecto/core/engines"
 	"conecto/factories"
 	"context"
@@ -24,7 +24,7 @@ func TestFbAdInsightPipelineIntegrationTest(t *testing.T) {
 	context := context.Background()
 	config:= factories.LoadConfigPipeline("./testdata/ad_insight_pipeline_to_postgres.json")
 	pipeline:= factories.BuildPipeline(config)
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",

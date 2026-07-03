@@ -1,7 +1,7 @@
 package auths
 
 import (
-	"conecto/connectors/rest/auths/stores"
+	"conecto/connectors/_http/auths/stores"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"

@@ -1,7 +1,7 @@
-package http
+package _http
 
 import (
-	"conecto/connectors/http/auths"
+	"conecto/connectors/_http/auths"
 	"context"
 	"net/http"
 )
@@ -12,7 +12,7 @@ type Client struct{
 	TokenStore auths.TokenStore
 }
 
-func NewRestClient(client IClient, tokenProvicer auths.TokenProvider, tokenStore auths.TokenStore) *Client{
+func NewClient(client IClient, tokenProvicer auths.TokenProvider, tokenStore auths.TokenStore) *Client{
     return &Client{
         Client: client,
 		TokenProvider: tokenProvicer,

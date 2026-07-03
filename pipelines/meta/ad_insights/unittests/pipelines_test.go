@@ -1,8 +1,8 @@
 package unittests
 
 import (
-	"conecto/connectors/rest"
-	"conecto/connectors/rest/auths"
+	"conecto/connectors/_http"
+	"conecto/connectors/_http/auths"
 	"conecto/core/engines"
 	"conecto/factories"
 	"conecto/sinks/memory"
@@ -26,7 +26,7 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_raw_data_to_memory.json")
 	pipeline:= factories.BuildPipeline(config)
 	
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 	token:= auths.Token{
 		AccessToken : "any-token",
 		RefreshToken: "any-refresh-token",
@@ -54,7 +54,7 @@ func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {
 
 	pipeline:= factories.BuildPipeline(config)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 
 	token:= auths.Token{
 		AccessToken : "any-token",
@@ -94,7 +94,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*rest.RESTConnector).Provider.RestClient.TokenStore.(*auths.AESGCMTokenStore)
+	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
 
 	token:= auths.Token{
 		AccessToken : "any-token",
