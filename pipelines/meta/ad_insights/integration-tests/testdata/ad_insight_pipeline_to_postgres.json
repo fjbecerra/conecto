@@ -1,7 +1,7 @@
 {
   "pipeline_id": "facbook_insights_homy",
   "connector" : {
-    "type" : "mocked_rest",
+    "type" : "rest",
     "retry": {
       "max_retries": 3,
       "backoff_ms": 500,

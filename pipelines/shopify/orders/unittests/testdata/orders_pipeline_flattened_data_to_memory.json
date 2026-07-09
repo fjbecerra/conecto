@@ -1,0 +1,61 @@
+{
+  "pipeline_id" : "homysur_shopify_orders",
+  "connector" : {
+    "type" : "graphql",
+    "retry": {
+      "max_retries": 3,
+      "backoff_ms": 500,
+      "max_backoff" : 500
+    },
+    "graphql":{
+      "data": {
+        "path" : "data.orders.edges",
+        "is_array": true    
+      },
+      "authentication" : {
+        "type" : "header",
+        "paramName" : "access_token"
+      },   
+      "pagination": {
+        "has_more_path": "data.orders.pageInfo.hasNextPage",
+        "cursor_path" : "data.orders.pageInfo.endCursor"  
+      },
+      "token_store":{
+        "type": "memory"
+      }
+    },
+    "mocked_rest":{
+      "response_paths" : [
+        "./testdata/response_page_1_orders.json",
+        "./testdata/response_page_2_orders.json"
+      ]
+    }
+  },
+  "transformers" : [
+    { 
+      "type":"extractor", 
+      "extractor":{
+        "fields": "default"
+      }
+    }
+  ],
+  "sink" : {
+    "type" : "memory",
+    "batch_size" : 10,
+    "retry": {
+      "max_retries": 3,
+      "backoff_ms": 500,
+      "max_backoff" : 500
+    }
+  },
+  "fields_specs" : {
+    "default":{
+        "id": { "path": "id", "type": "string","required" : true, "default": null }
+      }
+  },
+  "runtime": {
+    "state_store": {
+      "type" : "memory"
+    }
+  }
+}

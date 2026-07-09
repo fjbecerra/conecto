@@ -33,7 +33,7 @@ func NewConnector(config ConnectorConfig, random retry.Random, connections Conne
 
 func (c *Connector)Build() engines.ConnectorRunnable {
 	
-	store := buildStore(c.config.RestConfig.TokenStoreConfig, c.connections)
+	
 	v1, _ := base64.StdEncoding.DecodeString(
 		os.Getenv("TOKEN_ENCRYPTION_KEY_V1"),
 	)
@@ -41,20 +41,18 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 		"v1": v1,
 	}
 	keyManager:=auths.NewStaticKeyManager(keys, "v1")
-	tokenStore:= auths.NewADBTokenStore(store, keyManager)
+	
 	var tokenProvider auths.TokenProvider
 	var httpClient _http.IClient
 	var builder _http.RequestBuilder
 	var dataExtractor _http.DataExtractor
 	var cursorExtractor _http.CursorExtractor
+	var store stores.Store
 
 	switch c.config.Type {
 		case Rest:
+			store = buildStore(c.config.RestConfig.TokenStoreConfig, c.connections)
 			tokenProvider = buildTokenProvider(c.config.RestConfig.AuthenticationConfig)
-			httpClient= &_http.HttpClient{
-				Client: http.DefaultClient,
-			}	
-			
 			builder = &rest.RestRequestBuilder{
 				BaseURL: c.config.RestConfig.BaseUrl,
 				CursorParam: c.config.RestConfig.PaginationConfig.Response.Next.Path,
@@ -73,6 +71,7 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 			}	
 			
 		case Graphql:
+			store = buildStore(c.config.GraphqlConfig.TokenStoreConfig, c.connections)
 			tokenProvider = buildTokenProvider(c.config.GraphqlConfig.AuthenticationConfig)
 			builder = &graphql.GraphQLRequestBuilder{
 				Endpoint: c.config.GraphqlConfig.BaseUrl,
@@ -87,20 +86,26 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 			cursorExtractor = &graphql.GraphQLCursorExtractor{
 				HasMorePath: c.config.GraphqlConfig.PaginationConfig.HasMorePath,
 				CursorPath: c.config.GraphqlConfig.PaginationConfig.CursorPath,
-			}
-
-		case MockedRest:
-			mockedPaths := map[int]string{}
-			for i, path := range c.config.MockedRestConfig.ResponsePaths {
-				json,_ := os.ReadFile(path)
-				mockedPaths[i] = string(json)
-			}
-			httpClient = &_http.MockHttpClient{
-				Calls: mockedPaths,
-			}
+			}			
 		default:
 			panic("unknown source type: " + c.config.Type)
 	}
+	
+	if c.config.MockedRestConfig != nil {
+		mockedPaths := map[int]string{}
+		for i, path := range c.config.MockedRestConfig.ResponsePaths {
+			json,_ := os.ReadFile(path)
+			mockedPaths[i] = string(json)
+		}
+		httpClient = &_http.MockHttpClient{
+			Calls: mockedPaths,
+		}
+	}else{
+		httpClient= &_http.HttpClient{
+			Client: http.DefaultClient,
+		}
+	}
+	tokenStore:= auths.NewADBTokenStore(store, keyManager)
 	client := *_http.NewClient(httpClient, tokenProvider, tokenStore)
 	
 	paginationProvider := _http.PaginationProvider{
@@ -133,14 +138,14 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 
 func buildTokenProvider(authenticationConfig AuthenticationConfig) auths.TokenProvider{	
 	switch authenticationConfig.Type {
-		case "query":
+		case Query:
 			return &auths.QueryTokenProvider{
 				ParamName: authenticationConfig.ParamName,
 			}
-		case "bearer":
+		case Bearer:
 			return &auths.BearerTokenProvider{}	
 		
-		case "header":
+		case Header:
 			return &auths.HeaderTokenProvider{
 				HeaderName: authenticationConfig.ParamName,
 			}

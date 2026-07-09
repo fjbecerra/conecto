@@ -43,8 +43,8 @@ func TestMockedOrdersipelineRawData(t *testing.T) {
 
 	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 	
-	if len(memSink.Mstore) != 4 {
-		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
+	if len(memSink.Mstore) != 2 {
+		t.Errorf("number of record expected is 2, returned: %d", len(memSink.Mstore))
 	}	
 }
 
@@ -73,8 +73,8 @@ func TestMockedOrdersPipelineFlattened(t *testing.T) {
 
 	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 	
-	if len(memSink.Mstore) != 4 {
-		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
+	if len(memSink.Mstore) != 2 {
+		t.Errorf("number of record expected is 2, returned: %d", len(memSink.Mstore))
 	}	
 }
 
@@ -85,7 +85,7 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	defer cancel()
 
 	cfg := factories.LoadConfigPipeline(
-		"./testdata/orders_test_pipeline_flattened_data_to_memory.json",
+		"./testdata/orders_pipeline_flattened_data_to_memory.json",
 	)
 
 	pipeline := factories.BuildPipeline(cfg)
@@ -145,9 +145,9 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	}
 
 	// VERIFY EVENTUAL CONSISTENCY
-	if len(sink.Mstore) != 4 {
+	if len(sink.Mstore) != 2 {
 		t.Fatalf(
-			"expected 4 records after resume, got %d",
+			"expected 2 records after resume, got %d",
 			len(sink.Mstore),
 		)
 	}

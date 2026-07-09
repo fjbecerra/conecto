@@ -1,7 +1,7 @@
 {
-  "pipeline_id": "facbook_insights_homy",
+  "pipeline_id": "shopify_homy",
   "connector" : {
-    "type" : "mocked_rest",
+    "type" : "graphql",
     "retry": {
       "max_retries": 3,
       "backoff_ms": 500,
@@ -29,8 +29,8 @@
     },
     "mocked_rest":{
       "response_paths" : [
-          "./testdata/response_page_1_action_product_id.json",
-          "./testdata/response_page_2_action_product_id.json"
+          "./testdata/response_page_1_orders.json",
+          "./testdata/response_page_2_orders.json"
       ]
     }
   },
@@ -51,7 +51,7 @@
       "max_backoff" : 500
     },
     "schema" : {
-        "table" : "FB_AD_INSIGHTS_PRODUCT",
+        "table" : "SHOPIFY_ORDERS",
         "fields_specs" : "default",
         "auto_create" : true       
     },
@@ -60,11 +60,7 @@
   
   "fields_specs" : {
     "default":{
-        "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
-        "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
-        "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
-        "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
-        "date_start": { "path": "date_start", "type": "time", "required" : false, "default": null }
+         "id": { "path": "id", "type": "string","required" : true, "default": null }
       }
   },
   "runtime": {

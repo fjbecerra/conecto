@@ -62,7 +62,7 @@ type TokenStoreConfig struct {
 }
 
 type AuthenticationConfig struct{
-	Type string `json:"type"`
+	Type AuthenticationType `json:"type"`
 	ParamName string `json:"param_name"`	
 }
 
@@ -182,6 +182,13 @@ const(
 type SourcesType string
 const(
 	PostgresSource 	SourcesType = "postgres"
+)
+
+type AuthenticationType string
+const(
+	Query AuthenticationType = "query"
+	Header AuthenticationType = "header"
+	Bearer AuthenticationType = "bearer"
 )
 
 

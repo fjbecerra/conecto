@@ -146,7 +146,7 @@ func createPostgresTable(tableName string, specs FieldsSpecs, db *sql.DB){
 
 	columns := []string{
 
-		"    id SERIAL PRIMARY KEY",
+		"    __id SERIAL PRIMARY KEY",
 		"	 __event_id TEXT NOT NULL",
 		"    __pipeline_id TEXT NOT NULL",
 		"	 __ingested_at TIMESTAMP NOT NULL",
@@ -193,7 +193,7 @@ func createPostgresTable(tableName string, specs FieldsSpecs, db *sql.DB){
 	// add unique constraint
 	columns = append(
 		columns,
-		"    CONSTRAINT unique_constrains UNIQUE (__event_id)",
+		"CONSTRAINT unique_constrains_" + tableName +  " UNIQUE (__event_id)",
 	)
 
 	query := fmt.Sprintf(`

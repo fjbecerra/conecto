@@ -3,15 +3,15 @@
     "orders": {
       "edges": [
         {
-          "cursor": "cursor-1",
+          "cursor": "cursor-2",
           "node": {
-            "id": "gid://shopify/Order/1"
+            "id": "gid://shopify/Order/2"
           }
         }
       ],
       "pageInfo": {
-        "hasNextPage": true,
-        "endCursor": "cursor-1"
+        "hasNextPage": false,
+        "endCursor": "cursor-2"
       }
     }
   }

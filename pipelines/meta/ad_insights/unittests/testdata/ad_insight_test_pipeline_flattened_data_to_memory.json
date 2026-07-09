@@ -1,7 +1,7 @@
 {
   "pipeline_id" : "homysur_facebook_ads",
   "connector" : {
-    "type" : "mocked_rest",
+    "type" : "rest",
     "retry": {
       "max_retries": 3,
       "backoff_ms": 500,
@@ -17,7 +17,6 @@
         "paramName" : "access_token"
       },   
       "pagination": {
-        "type": "cursor",
         "request": {
           "param": "after"
         },
