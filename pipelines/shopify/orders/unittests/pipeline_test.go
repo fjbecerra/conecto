@@ -1,9 +1,9 @@
 package unittests
 
 import (
-	"conecto/core/engines"
+	"conecto/auth/credentials"
 	"conecto/connectors/_http"
-	"conecto/connectors/_http/auths"
+	"conecto/core/engines"
 	"conecto/factories"
 	"conecto/sinks/memory"
 	"conecto/states"
@@ -21,21 +21,31 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestMockedOrdersipelineRawData(t *testing.T) {	
+
+func TestMockedOrdersipelineRawData(t *testing.T) {	 
 	context := context.Background()
 	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_raw_data_to_memory.json")
 	pipeline:= factories.BuildPipeline(config)
 	
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+	
+	credential := credentials.Credential{
+			Type: "oauth2",
+
+			Data: map[string]string{
+				"X-Shopify-Access-Token": "shpat_xxxxx",
+				"refresh_token": "xxxx",
+			},
+
+			Expiry: nil,
 	}
-	error:= tokenStore.Save(context, config.ID, token)
+	
+	error:= credentialService.Save(context, config.ID, credential)
 	if error != nil {
 		t.Error(error.Error())
-	}	
+	}
+	
+	
 	error= pipeline.Run(context)
 	if error != nil {
 		t.Error(error.Error())
@@ -54,14 +64,19 @@ func TestMockedOrdersPipelineFlattened(t *testing.T) {
 
 	pipeline:= factories.BuildPipeline(config)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
 
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+	credential := credentials.Credential{
+			Type: "oauth2",
+
+			Data: map[string]string{
+				"X-Shopify-Access-Token": "shpat_xxxxx",
+				"refresh_token": "xxxx",
+			},
+
+			Expiry: nil,
 	}
-	error:= tokenStore.Save(context, config.ID, token)
+	error:= credentialService.Save(context, config.ID, credential)
 	if error != nil {
 		t.Error(error.Error())
 	}		
@@ -94,14 +109,17 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
 
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+	credential := credentials.Credential{
+		Type: "oauth2",
+		Data: map[string]string{
+			"X-Shopify-Access-Token": "shpat_xxxxx",
+			"refresh_token": "xxxx",
+		},
+		Expiry: nil,
 	}
-	er:= tokenStore.Save(ctx,cfg.ID, token)
+	er:= credentialService.Save(ctx,cfg.ID, credential)
 	if er != nil {
 		t.Error(er.Error())
 	}	

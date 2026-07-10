@@ -1,4 +1,4 @@
-package stores
+package credentials
 
 import (
 	"context"
@@ -6,17 +6,17 @@ import (
 	"errors"
 )
 
-type PostgresTokenDB struct {
+type PostgresCredentialDB struct {
 	db *sql.DB
 }
 
-func NewPostgresTokenDB(db *sql.DB) *PostgresTokenDB {
-	return &PostgresTokenDB{
+func NewPostgresCredentialDB(db *sql.DB) *PostgresCredentialDB {
+	return &PostgresCredentialDB{
 		db: db,
 	}
 }
 
-func (p *PostgresTokenDB) SaveToken(context context.Context, id string, record TokenRecord) error {
+func (p *PostgresCredentialDB) SaveCredential(context context.Context, id string, record EncryptedCredential) error {
 
 	query := `
 	INSERT INTO oauth_tokens (
@@ -51,7 +51,7 @@ func (p *PostgresTokenDB) SaveToken(context context.Context, id string, record T
 	return err
 }
 
-func (p *PostgresTokenDB) GetToken(context context.Context, ID string) (TokenRecord, error) {
+func (p *PostgresCredentialDB) GetCredential(context context.Context, ID string) (EncryptedCredential, error) {
 
 	query := `
 	SELECT
@@ -63,7 +63,7 @@ func (p *PostgresTokenDB) GetToken(context context.Context, ID string) (TokenRec
 	WHERE pipeline_id = $1
 	`
 
-	var record TokenRecord
+	var record EncryptedCredential
 
 	err := p.db.QueryRowContext(
 		context,
@@ -78,15 +78,15 @@ func (p *PostgresTokenDB) GetToken(context context.Context, ID string) (TokenRec
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return TokenRecord{}, ErrTokenNotFound
+			return EncryptedCredential{}, ErrCredentialNotFound
 		}
 
-		return TokenRecord{}, err
+		return EncryptedCredential{}, err
 	}
 
 	return record, nil
 }
 
-func (p *PostgresTokenDB) Close() error {
+func (p *PostgresCredentialDB) Close() error {
 	return p.db.Close()
 }

@@ -1,34 +1,35 @@
 package _http
 
 import (
-	"conecto/connectors/_http/auths"
+	"conecto/auth/connections"
+	"conecto/auth/credentials"
 	"context"
 	"net/http"
 )
 
 type Client struct{
 	Client 	IClient
-	TokenProvider auths.TokenProvider
-	TokenStore auths.TokenStore
+	Provider Provider
+	CredentialService credentials.CredentialService
 }
 
-func NewClient(client IClient, tokenProvicer auths.TokenProvider, tokenStore auths.TokenStore) *Client{
+func NewClient(client IClient, provider Provider, credentialService credentials.CredentialService) *Client{
     return &Client{
         Client: client,
-		TokenProvider: tokenProvicer,
-		TokenStore: tokenStore,
+		Provider: provider,
+		CredentialService: credentialService,
     }
 }
 
-func (c *Client) Fetch(context context.Context, req *http.Request, ID string) (*HttpResponse, error){
+func (c *Client) Fetch(context context.Context, req *http.Request, connection connections.Connection) (*HttpResponse, error){
 
-	token, err := c.TokenStore.Get(context, ID)
+	credential, err := c.CredentialService.Get(context, connection.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.TokenProvider != nil {
-		if err := c.TokenProvider.Apply(req, token); err != nil {
+	if c.Provider != nil {
+		if err := c.Provider.Apply(req, credential); err != nil {
 			return nil, err
 		}
 	}
@@ -36,7 +37,7 @@ func (c *Client) Fetch(context context.Context, req *http.Request, ID string) (*
 }
 
 func (c *Client) Close() error{	
-	err := c.TokenStore.Close()
+	err := c.CredentialService.Close()
 	if err!=nil{
 		return err
 	}

@@ -1,8 +1,8 @@
 package unittests
 
 import (
+	"conecto/auth/credentials"
 	"conecto/connectors/_http"
-	"conecto/connectors/_http/auths"
 	"conecto/core/engines"
 	"conecto/factories"
 	"conecto/sinks/memory"
@@ -26,13 +26,20 @@ func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_raw_data_to_memory.json")
 	pipeline:= factories.BuildPipeline(config)
 	
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+	
+	credential := credentials.Credential{
+			Type: "oauth2",
+
+			Data: map[string]string{
+				"access_token": "shpat_xxxxx",
+				"refresh_token": "xxxx",
+			},
+
+			Expiry: nil,
 	}
-	error:= tokenStore.Save(context, config.ID, token)
+	
+	error:= credentialService.Save(context, config.ID, credential)
 	if error != nil {
 		t.Error(error.Error())
 	}	
@@ -54,14 +61,20 @@ func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {
 
 	pipeline:= factories.BuildPipeline(config)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+	
+	credential := credentials.Credential{
+			Type: "oauth2",
 
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+			Data: map[string]string{
+				"access_token": "shpat_xxxxx",
+				"refresh_token": "xxxx",
+			},
+
+			Expiry: nil,
 	}
-	error:= tokenStore.Save(context, config.ID, token)
+	
+	error:= credentialService.Save(context, config.ID, credential)
 	if error != nil {
 		t.Error(error.Error())
 	}		
@@ -94,14 +107,20 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
 
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+	
+	credential := credentials.Credential{
+			Type: "oauth2",
 
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+			Data: map[string]string{
+				"access_token": "shpat_xxxxx",
+				"refresh_token": "xxxx",
+			},
+
+			Expiry: nil,
 	}
-	er:= tokenStore.Save(ctx,cfg.ID, token)
+	
+	er:= credentialService.Save(ctx, cfg.ID, credential)
 	if er != nil {
 		t.Error(er.Error())
 	}	

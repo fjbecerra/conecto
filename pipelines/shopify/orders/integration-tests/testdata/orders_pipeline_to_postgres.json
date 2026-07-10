@@ -14,7 +14,7 @@
       }, 
       "authentication" : {
         "type" : "header",
-        "paramName" : "shopify-xx"
+        "param_name" : "X-Shopify-Access-Token"
       }, 
       "pagination": {
         "has_more_path": "data.orders.pageInfo.hasNextPage",

@@ -2,6 +2,7 @@ package _http
 
 import (
 	"conecto/core"
+	"conecto/auth/connections"
 	"conecto/core/statestores"
 	"context"
 	"fmt"
@@ -11,7 +12,7 @@ type HttpConnector struct {
 	Provider *PaginationProvider
 }
 
-func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cursor, ID string) (core.Batch, error) {
+func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cursor, connection connections.Connection) (core.Batch, error) {
 	fmt.Println("SOURCE: sending event")
 	var pc *PageCursor
 
@@ -21,7 +22,7 @@ func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cu
 		}
 	}
 
-	page, err := c.Provider.FetchPage(context, pc, ID)
+	page, err := c.Provider.FetchPage(context, pc, connection)
 	if err != nil {
 		return core.Batch{}, err
 	}

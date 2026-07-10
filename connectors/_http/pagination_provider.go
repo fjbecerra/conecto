@@ -3,6 +3,7 @@ package _http
 import (
 	"context"
 	"encoding/json"
+	"conecto/auth/connections"
 
 )
 
@@ -13,14 +14,14 @@ type PaginationProvider struct {
     Cursor CursorExtractor
 }
 
-func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, ID string) (Page[json.RawMessage], error) {
+func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection connections.Connection) (Page[json.RawMessage], error) {
     
 	 req, err := p.Builder.Build(context, cursor)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}
 
-	resp, err := p.Client.Fetch(context, req, ID)
+	resp, err := p.Client.Fetch(context, req, connection)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}

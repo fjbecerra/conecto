@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"conecto/auth/connections"
 	"conecto/core"
 	"conecto/core/engines"
 	"conecto/core/statestores"
@@ -16,7 +17,7 @@ type EngineRunner interface {
 }
 
 type Pipeline struct {
-	ID 			string
+	Connection 	connections.Connection
 	Engine 		*engines.Engine
 	StateStore  statestores.StateStore
 }
@@ -29,7 +30,7 @@ func (p *Pipeline) Run(context context.Context) error {
 	g, ctxWithCancel := errgroup.WithContext(context)
 
 	// LOAD CHECKPOINT (ONLY ONCE)
-	state, err := p.StateStore.Load(ctxWithCancel, p.ID)
+	state, err := p.StateStore.Load(ctxWithCancel, p.Connection.ID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +51,7 @@ func (p *Pipeline) Run(context context.Context) error {
 			ctxWithCancel,
 			state,
 			batches,
-			p.ID,
+			p.Connection,
 		)
 	})
 
@@ -73,7 +74,7 @@ func (p *Pipeline) Run(context context.Context) error {
 
             if err := p.Engine.SinkCommiter.Commit(
                 ctxWithCancel,
-				p.ID,
+				p.Connection.ID,
                 batch,
             ); err != nil {
                 return err
@@ -91,13 +92,13 @@ func (p *Pipeline) Run(context context.Context) error {
 			return nil
 
 		case errors.Is(err, ctxWithCancel.Err()):
-			p.StateStore.Save(ctxWithCancel, p.ID, statestores.State{
+			p.StateStore.Save(ctxWithCancel, p.Connection.ID, statestores.State{
 				Status: statestores.Stopped,
 			})
 			return err
 
 		default:
-			p.StateStore.Save(ctxWithCancel,p.ID, statestores.State{
+			p.StateStore.Save(ctxWithCancel,p.Connection.ID, statestores.State{
 				Status: statestores.Failed,
 			})
 			return err

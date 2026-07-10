@@ -1,9 +1,8 @@
 package factories
 
 import (
+	"conecto/auth/credentials"
 	"conecto/connectors/_http"
-	"conecto/connectors/_http/auths"
-	"conecto/connectors/_http/auths/stores"
 	"conecto/connectors/_http/graphql"
 	"conecto/connectors/_http/rest"
 	"conecto/core/engines"
@@ -40,19 +39,19 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 	keys:=map[string][]byte{
 		"v1": v1,
 	}
-	keyManager:=auths.NewStaticKeyManager(keys, "v1")
+	keyManager:=credentials.NewStaticKeyManager(keys, "v1")
 	
-	var tokenProvider auths.TokenProvider
+	var provider _http.Provider
 	var httpClient _http.IClient
 	var builder _http.RequestBuilder
 	var dataExtractor _http.DataExtractor
 	var cursorExtractor _http.CursorExtractor
-	var store stores.Store
+	var store credentials.Store
 
 	switch c.config.Type {
 		case Rest:
 			store = buildStore(c.config.RestConfig.TokenStoreConfig, c.connections)
-			tokenProvider = buildTokenProvider(c.config.RestConfig.AuthenticationConfig)
+			provider = buildProvider(c.config.RestConfig.AuthenticationConfig)
 			builder = &rest.RestRequestBuilder{
 				BaseURL: c.config.RestConfig.BaseUrl,
 				CursorParam: c.config.RestConfig.PaginationConfig.Response.Next.Path,
@@ -72,7 +71,7 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 			
 		case Graphql:
 			store = buildStore(c.config.GraphqlConfig.TokenStoreConfig, c.connections)
-			tokenProvider = buildTokenProvider(c.config.GraphqlConfig.AuthenticationConfig)
+			provider = buildProvider(c.config.GraphqlConfig.AuthenticationConfig)
 			builder = &graphql.GraphQLRequestBuilder{
 				Endpoint: c.config.GraphqlConfig.BaseUrl,
 				Query: c.config.GraphqlConfig.Query,
@@ -105,8 +104,8 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 			Client: http.DefaultClient,
 		}
 	}
-	tokenStore:= auths.NewADBTokenStore(store, keyManager)
-	client := *_http.NewClient(httpClient, tokenProvider, tokenStore)
+	credentialService:= credentials.NewAESGCMCredentialService(store, keyManager)
+	client := *_http.NewClient(httpClient, provider, credentialService)
 	
 	paginationProvider := _http.PaginationProvider{
 		Client : &client,
@@ -136,18 +135,20 @@ func (c *Connector)Build() engines.ConnectorRunnable {
 
 }
 
-func buildTokenProvider(authenticationConfig AuthenticationConfig) auths.TokenProvider{	
+func buildProvider(authenticationConfig AuthenticationConfig) _http.Provider{	
 	switch authenticationConfig.Type {
 		case Query:
-			return &auths.QueryTokenProvider{
-				ParamName: authenticationConfig.ParamName,
+			return &_http.QueryProvider{
+				Param: authenticationConfig.ParamName,
 			}
 		case Bearer:
-			return &auths.BearerTokenProvider{}	
+			return &_http.BearerProvider{
+				Key: authenticationConfig.ParamName,
+			}
 		
 		case Header:
-			return &auths.HeaderTokenProvider{
-				HeaderName: authenticationConfig.ParamName,
+			return &_http.HeaderProvider{
+				Name: authenticationConfig.ParamName,
 			}
 		
 		default:
@@ -155,7 +156,7 @@ func buildTokenProvider(authenticationConfig AuthenticationConfig) auths.TokenPr
 	}
 }
 
-func buildStore(tokenStoreConfig TokenStoreConfig, connections Connections) stores.Store{
+func buildStore(tokenStoreConfig TokenStoreConfig, connections Connections) credentials.Store{
 	
 	switch tokenStoreConfig.Type{
 		case PostgresTokenStore:
@@ -163,9 +164,9 @@ func buildStore(tokenStoreConfig TokenStoreConfig, connections Connections) stor
 			if(tokenStoreConfig.AutoCreate){
 				createPostgresTokenStoreTable(tokenStoreConfig, connection)			}
 			
-			return stores.NewPostgresTokenDB(connection)
+			return credentials.NewPostgresCredentialDB(connection)
 		case MemoryTokenStore:
-			return stores.NewMemoryStoreToken(make(map[string]any))
+			return credentials.NewMemoryStoreCredential(make(map[string]any))
 		default:
 			panic("not token store found")
 	}

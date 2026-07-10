@@ -26,23 +26,7 @@
       "max_retries": 3,
       "backoff_ms": 500,
       "max_backoff" : 500
-    },
-    "streams": {
-      "ad_insights": {
-        "base_url": "xxx",
-        "schema": {
-          "spend": { "path": "spend", "type": "float","required" : false, "default": 0.0 },
-          "clicks": { "path": "clicks", "type": "int64", "required" : false, "default": 0 },
-          "impressions": { "path": "impressions", "type": "int64", "required" : false, "default": 0 },
-          "product_id": { "path": "product_id", "type": "int64", "required" : false, "default": 0 },
-          "date_start": { "path": "date_start", "type": "int64", "required" : false, "default": null }
-        },
-        "destination": "ad_insights",
-        "key_fields": ["product_id", "date_start"],
-        "workers" : 5     
-      }
-    }
-    
+    }    
   },
   "sink" : {
     "type" : "rdbs",

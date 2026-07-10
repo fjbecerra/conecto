@@ -1,6 +1,7 @@
 package engines
 
 import (
+	"conecto/auth/connections"
 	"conecto/core"
 	"conecto/core/retry"
 	"conecto/core/statestores"
@@ -8,7 +9,7 @@ import (
 )
 
 type ConnectorRunnable interface {
-	Run(context context.Context, state statestores.State, out chan<- core.Batch, ID string) error
+	Run(context context.Context, state statestores.State, out chan<- core.Batch, connection connections.Connection) error
 	Shutdown(ctx context.Context) error
 }
 
@@ -21,7 +22,7 @@ func (e *ConnectorEngine) Run(
 	context context.Context,
 	state statestores.State,
 	out chan<- core.Batch,
-	ID string,
+	connection connections.Connection,
 ) error {
 
 	current := state.Cursor
@@ -32,7 +33,7 @@ func (e *ConnectorEngine) Run(
 	for {
 		 err := e.Retry.Do(context, func() error {
     		var err error
-    		batch, err = e.Connector.FetchBatch(context, current, ID)
+    		batch, err = e.Connector.FetchBatch(context, current, connection)
     		return err
 		})
 		if err != nil {

@@ -14,7 +14,7 @@
       },
       "authentication" : {
         "type" : "query",
-        "paramName" : "access_token"
+        "param_name" : "access_token"
       },   
       "pagination": {
         "request": {

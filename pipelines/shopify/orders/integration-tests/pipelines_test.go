@@ -1,14 +1,13 @@
 package factories
 
 import (
+	"conecto/auth/credentials"
 	"conecto/connectors/_http"
-	"conecto/connectors/_http/auths"
 	"conecto/core/engines"
 	"conecto/factories"
 	"context"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -24,17 +23,23 @@ func TestShopifyPipelineIntegrationTest(t *testing.T) {
 	context := context.Background()
 	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_to_postgres.json")
 	pipeline:= factories.BuildPipeline(config)
-	tokenStore:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.TokenStore.(*auths.AESGCMTokenStore)
-	token:= auths.Token{
-		AccessToken : "any-token",
-		RefreshToken: "any-refresh-token",
-		Expiry: time.Now(),
+	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+	
+	credential := credentials.Credential{
+		Type: "oauth2",
+
+		Data: map[string]string{
+			"X-Shopify-Access-Token": "shpat_xxxxx",
+			"refresh_token": "xxxx",
+		},
+
+		Expiry: nil,
 	}
-	er:= tokenStore.Save(context,config.ID, token)
-	if er != nil {
-		t.Error(er.Error())
-	}	
-	error:= pipeline.Run(context)
+	error:= credentialService.Save(context, config.ID, credential)
+	if error != nil {
+		t.Error(error.Error())
+	}
+	error= pipeline.Run(context)
 	if error != nil {
 		t.Error(error.Error())
 	}

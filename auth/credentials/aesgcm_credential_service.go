@@ -1,7 +1,6 @@
-package auths
+package credentials
 
 import (
-	"conecto/connectors/_http/auths/stores"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -10,29 +9,29 @@ import (
 )
 
 
-type AESGCMTokenStore struct {
-	Store  stores.Store
+type AESGCMCredentialService struct {
+	Store  Store
 	keyManager KeyManager
 }
 
-func NewADBTokenStore(store stores.Store, keyManager KeyManager) *AESGCMTokenStore {
-	return &AESGCMTokenStore{
+func NewAESGCMCredentialService(store Store, keyManager KeyManager) *AESGCMCredentialService {
+	return &AESGCMCredentialService{
 		Store:  store,
 		keyManager: keyManager,
 	}
 }
 
-func (s *AESGCMTokenStore) Get(context context.Context, ID string) (Token, error) {
+func (s *AESGCMCredentialService) Get(context context.Context, ID string) (Credential, error) {
 
-	record, err := s.Store.GetToken(context, ID)
+	record, err := s.Store.GetCredential(context, ID)
 
 	if err != nil {
-		return Token{}, err
+		return Credential{}, err
 	}
 
 	key, err := s.keyManager.Get(record.KeyVersion)
 	if err != nil {
-		return Token{}, err
+		return Credential{}, err
 	}
 
 	plain, err := decrypt(
@@ -42,19 +41,19 @@ func (s *AESGCMTokenStore) Get(context context.Context, ID string) (Token, error
 	)
 
 	if err != nil {
-		return Token{}, err
+		return Credential{}, err
 	}
 
-	var token Token
+	var token Credential
 
 	err = json.Unmarshal(plain, &token)
 
 	return token, err
 }
 
-func (s *AESGCMTokenStore) Save(context context.Context, ID string, token Token) error {
+func (s *AESGCMCredentialService) Save(context context.Context, ID string, credential Credential) error {
 
-	raw, err := json.Marshal(token)
+	raw, err := json.Marshal(credential)
 	if err != nil {
 		return err
 	}
@@ -69,17 +68,17 @@ func (s *AESGCMTokenStore) Save(context context.Context, ID string, token Token)
 		return err
 	}
 
-	record := stores.TokenRecord{
+	record := EncryptedCredential{
 		Ciphertext: ciphertext,
 		Nonce:      nonce,
 		KeyVersion: version,
-		ExpiresAt:  token.Expiry,
+		ExpiresAt:  credential.Expiry,
 	}
 
-	return s.Store.SaveToken(context,ID, record)
+	return s.Store.SaveCredential(context,ID, record)
 }
 
-func (s *AESGCMTokenStore) Close() error {
+func (s *AESGCMCredentialService) Close() error {
 	return s.Store.Close()
 }
 
