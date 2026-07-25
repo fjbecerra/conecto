@@ -5,12 +5,32 @@ import (
 	"os"
 )
 
-type ConnectorConfig struct{
-	Type ConnectorType `json:"type"`	
-	Retry RetryConfig `json:"retry"`
+type StreamConfig struct {
+	Id  string `json:"stream_id"`
+	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
+	TransformersConfig []TransformerConfig `json:"transformers"`
+	DestinationConfig DestinationConfig `json:"destination"`
+	FieldsSpecsConfig map[string]FieldsSpecs `json:"fields_specs"`
+
+}
+
+type DestinationConfig struct {
+	Name string `json:"destination"`
+	Keys string `json:"keys"`
+	Schema *string `json:"schema,omitempty"`
+}
+
+type ApiConfig struct {
+	Type ApiType `json:"type"`	
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	GraphqlConfig *GraphqlConfig `json:"graphql,omitempty"`
-	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
+}
+
+type ConnectorConfig struct{
+	Type ConnectorType `json:"type"`
+	ApiConfig *ApiConfig `json:"api,omitempty"`
+	Retry RetryConfig `json:"retry"`
+
 }
 
 type RestConfig struct{	
@@ -84,11 +104,10 @@ type TransformerConfig struct {
 
 type ExtractorConfig struct {	
 	Fields string `json:"fields"`	
+
 }
 
 type SchemaConfig struct {
-    Table 	string  `json:"table"`
-	FieldsSpecs string `json:"fields_specs"`
 	AutoCreate bool `json:"auto_create"`
 }
 
@@ -124,36 +143,50 @@ type SourcesConfig map[string]struct {
 }
 
 
-type ConfigPipeline struct {
-	ID string `json:"pipeline_id"`
+type PipelineConfig struct {
+	ID string `json:"id"`
 	ConnectorConfig ConnectorConfig `json:"connector"`
-	TransformersConfig []TransformerConfig `json:"transformers"`
 	SinkConfig SinkConfig `json:"sink"`
-	FieldsSpecsConfig map[string]FieldsSpecs `json:"fields_specs"`
+	StreamsConfig []StreamConfig `json:"streams"`
+}
+
+type SyncConfig struct{}
+
+type ConfigApp struct {
 	RuntimeConfig RuntimeConfig `json:"runtime"`
 	SourcesConfig SourcesConfig `json:"sources"`
+	SyncConfig SyncConfig `json:"sync"`
+	PipelinesConfig []string `json:"pipelines"`
 }
 
-func LoadConfigPipeline(path string) ConfigPipeline{
-    data, err := os.ReadFile(path)
-    if err != nil {
-        panic(err)
-    }
-    var config ConfigPipeline
 
-    err = json.Unmarshal(data, &config)
-    if err != nil {
-        panic(err)
-    }
-		
-    return config
+
+func LoadConfig[T any](path string) (T, error) {
+	var config T
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return config, err
+	}
+
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return config, err
+	}
+
+	return config, nil
 }
 
-type ConnectorType string
+type ConnectorType string 
 const (
-	Rest 	   ConnectorType = "rest"
-	Graphql	   ConnectorType = "graphql"
-	MockedRest ConnectorType = "mocked_rest"
+	Api 	ConnectorType = "api"
+)
+
+type ApiType string
+const (
+	Rest 	   ApiType = "rest"
+	Graphql	   ApiType = "graphql"
+	MockedRest ApiType = "mocked_rest"
 )
 
 type TransformerType string

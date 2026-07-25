@@ -1,22 +1,36 @@
 package credentials
 
 import (
+	"conecto/auth/connections"
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 )
 
 type PostgresCredentialDB struct {
 	db *sql.DB
 }
 
-func NewPostgresCredentialDB(db *sql.DB) *PostgresCredentialDB {
+func NewPostgresCredentialDB(dsn string) *PostgresCredentialDB {
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Connected!")
+
 	return &PostgresCredentialDB{
 		db: db,
 	}
 }
 
-func (p *PostgresCredentialDB) SaveCredential(context context.Context, id string, record EncryptedCredential) error {
+func (p *PostgresCredentialDB) SaveCredential(context context.Context, connection connections.Connection, record EncryptedCredential) error {
 
 	query := `
 	INSERT INTO oauth_tokens (
@@ -41,7 +55,7 @@ func (p *PostgresCredentialDB) SaveCredential(context context.Context, id string
 	_, err := p.db.ExecContext(
 		context,
 		query,
-		id,
+		connection.ID,
 		record.Ciphertext,
 		record.Nonce,
 		record.KeyVersion,
@@ -51,7 +65,7 @@ func (p *PostgresCredentialDB) SaveCredential(context context.Context, id string
 	return err
 }
 
-func (p *PostgresCredentialDB) GetCredential(context context.Context, ID string) (EncryptedCredential, error) {
+func (p *PostgresCredentialDB) GetCredential(context context.Context, connection connections.Connection) (EncryptedCredential, error) {
 
 	query := `
 	SELECT
@@ -68,7 +82,7 @@ func (p *PostgresCredentialDB) GetCredential(context context.Context, ID string)
 	err := p.db.QueryRowContext(
 		context,
 		query,
-		ID,
+		connection.ID,
 	).Scan(
 		&record.Ciphertext,
 		&record.Nonce,

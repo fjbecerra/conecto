@@ -9,15 +9,13 @@ import (
 type Transformer struct {
 	Config []TransformerConfig
 	FieldsSpecsConfig map[string]FieldsSpecs
-	RuntimeConfig RuntimeConfig
-
+	
 }
 
-func NewTransform(config []TransformerConfig, fieldsSpecsConfig map[string]FieldsSpecs, runtimeConfig RuntimeConfig) *Transformer {
+func NewTransform(config []TransformerConfig, fieldsSpecsConfig map[string]FieldsSpecs) *Transformer {
 	return &Transformer {
 		Config: config,
 		FieldsSpecsConfig: fieldsSpecsConfig,
-		RuntimeConfig: runtimeConfig,
  	}
 }
 

@@ -23,15 +23,17 @@ type Sink struct {
 	random retry.Random
 	StateStore statestores.StateStore
 	connections Connections
+	destinationConfig DestinationConfig
 }
 
-func NewSink(config SinkConfig, fieldsSpecsConfigs map[string]FieldsSpecs, random retry.Random, stateStore statestores.StateStore, connections Connections) *Sink{
+func NewSink(config SinkConfig, fieldsSpecsConfigs map[string]FieldsSpecs, random retry.Random, stateStore statestores.StateStore, connections Connections, destinationConfig DestinationConfig) *Sink{
 	return &Sink{
 		Config: config,
 		FieldsSpecsConfigs: fieldsSpecsConfigs,
 		random: random,
 		StateStore: stateStore,
 		connections: connections,
+		destinationConfig: destinationConfig,
 	}
 }
 
@@ -49,10 +51,10 @@ func (s * Sink) Build() engines.SinkCommiter {
 	}
 	switch s.Config.Type {
 		case PostgresSink:
-			sink = buildPostgres(s.Config.SchemaConfig, s.FieldsSpecsConfigs)	
+			sink = buildPostgres(s.destinationConfig, s.FieldsSpecsConfigs)	
 			connection:= s.connections[s.Config.Source].OpenDB()	
 			if s.Config.SchemaConfig.AutoCreate{
-				createPostgresTable(s.Config.SchemaConfig.Table, s.FieldsSpecsConfigs[s.Config.SchemaConfig.FieldsSpecs],connection)
+				createPostgresTable(s.destinationConfig.Name, s.FieldsSpecsConfigs[*s.destinationConfig.Schema],connection)
 			}
 				
 			sqlExecutor := db.SQLExecutor{
@@ -97,12 +99,12 @@ func  buildSinkMemory() *memory.SinkMemory {
 }
 
 
-func buildPostgres(schemaConfig SchemaConfig, fieldsSpecsConfig map[string]FieldsSpecs)*db.Rdbs{
+func buildPostgres(destinationConfig DestinationConfig, fieldsSpecsConfig map[string]FieldsSpecs)*db.Rdbs{
 	jsonCodec := codecs.JSONCodec{}
 	adapter := sinks.Postgres{Codec: &jsonCodec, Upsert: true }
 	
 	return &db.Rdbs{
-		Schema: buildSchema(schemaConfig.Table, fieldsSpecsConfig[schemaConfig.FieldsSpecs]),
+		Schema: buildSchema(destinationConfig.Name, fieldsSpecsConfig[*destinationConfig.Schema]),
 		Adapter: &adapter,
 	}
 }

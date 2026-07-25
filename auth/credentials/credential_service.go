@@ -1,17 +1,13 @@
 package credentials
 
 import (
+	"conecto/auth/connections"
 	"context"
 )
 
-// type Metadata struct{
-// 	ID string 
-// 	provider string
-// }
-
 type CredentialService interface {
-	Save(context context.Context, ID string, credential Credential) error
-	Get(context context.Context, ID string) (Credential, error)
+	Save(context context.Context, connection connections.Connection, credential Credential) error
+	Get(context context.Context, connection connections.Connection) (Credential, error)
 	Close() error
 }
 

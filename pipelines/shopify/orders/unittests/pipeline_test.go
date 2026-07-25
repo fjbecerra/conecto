@@ -1,8 +1,9 @@
 package unittests
 
 import (
+	"conecto/auth/connections"
 	"conecto/auth/credentials"
-	"conecto/connectors/_http"
+	"conecto/connectors/api"
 	"conecto/core/engines"
 	"conecto/factories"
 	"conecto/sinks/memory"
@@ -14,85 +15,91 @@ import (
 	"time"
 )
 
+var credentialService credentials.CredentialService
+
 func TestMain(m *testing.M) {
 
-   	os.Setenv("TOKEN_ENCRYPTION_KEY_V1", "z1Wbj51mq1GmIpmwAfLv9X5oSekOYEsC/9YXhOCuKjU=")
+	os.Setenv("TOKEN_ENCRYPTION_KEY_V1", "z1Wbj51mq1GmIpmwAfLv9X5oSekOYEsC/9YXhOCuKjU=")
 	code := m.Run()
 	os.Exit(code)
 }
 
-
-func TestMockedOrdersipelineRawData(t *testing.T) {	 
+func TestMockedOrdersipelineRawData(t *testing.T) {
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_raw_data_to_memory.json")
-	pipeline:= factories.BuildPipeline(config)
-	
-	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
-	
-	credential := credentials.Credential{
+	config := factories.LoadConfigPipeline("./testdata/orders_pipeline_raw_data_to_memory.json")
+	pipeline := factories.BuildPipeline(config)
+	connection := connections.Connection{
+		ID: "test-connection-id-123",
+	}
+	for _, stream := range pipeline.Streams {
+		credentialService := stream.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*api.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+		credential := credentials.Credential{
 			Type: "oauth2",
 
 			Data: map[string]string{
 				"X-Shopify-Access-Token": "shpat_xxxxx",
-				"refresh_token": "xxxx",
+				"refresh_token":          "xxxx",
 			},
 
 			Expiry: nil,
-	}
-	
-	error:= credentialService.Save(context, config.ID, credential)
-	if error != nil {
-		t.Error(error.Error())
-	}
-	
-	
-	error= pipeline.Run(context)
-	if error != nil {
-		t.Error(error.Error())
+		}
+
+		error := credentialService.Save(context, connection, credential)
+		if error != nil {
+			t.Error(error.Error())
+		}
+
+		error = stream.Run(context, connection)
+		if error != nil {
+			t.Error(error.Error())
+		}
+
+		memSink := stream.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
+
+		if len(memSink.Mstore) != 2 {
+			t.Errorf("number of record expected is 2, returned: %d", len(memSink.Mstore))
+		}
 	}
 
-	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
-	
-	if len(memSink.Mstore) != 2 {
-		t.Errorf("number of record expected is 2, returned: %d", len(memSink.Mstore))
-	}	
 }
 
-func TestMockedOrdersPipelineFlattened(t *testing.T) {	
+func TestMockedOrdersPipelineFlattened(t *testing.T) {
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_flattened_data_to_memory.json")
+	config := factories.LoadConfigPipeline("./testdata/orders_pipeline_flattened_data_to_memory.json")
 
-	pipeline:= factories.BuildPipeline(config)
-
-	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
-
-	credential := credentials.Credential{
+	pipeline := factories.BuildPipeline(config)
+	connection := connections.Connection{
+		ID: "test-connection-id-123",
+	}
+	for _, stream := range pipeline.Streams {
+		credentialService := stream.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*api.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+		credential := credentials.Credential{
 			Type: "oauth2",
 
 			Data: map[string]string{
 				"X-Shopify-Access-Token": "shpat_xxxxx",
-				"refresh_token": "xxxx",
+				"refresh_token":          "xxxx",
 			},
 
 			Expiry: nil,
-	}
-	error:= credentialService.Save(context, config.ID, credential)
-	if error != nil {
-		t.Error(error.Error())
-	}		
+		}
+		error := credentialService.Save(context, connection, credential)
+		if error != nil {
+			t.Error(error.Error())
+		}
 
-	error= pipeline.Run(context)
-	if error != nil {
-		t.Error(error.Error())
-	}
+		error = stream.Run(context, connection)
+		if error != nil {
+			t.Error(error.Error())
+		}
 
-	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
-	
-	if len(memSink.Mstore) != 2 {
-		t.Errorf("number of record expected is 2, returned: %d", len(memSink.Mstore))
-	}	
+		memSink := stream.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
+
+		if len(memSink.Mstore) != 2 {
+			t.Errorf("number of record expected is 2, returned: %d", len(memSink.Mstore))
+		}
+	}
 }
-
 
 func TestPipeline_CancelAndResume(t *testing.T) {
 
@@ -105,71 +112,76 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 
 	pipeline := factories.BuildPipeline(cfg)
 
-	sink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
-
-	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
-
-	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
-
-	credential := credentials.Credential{
-		Type: "oauth2",
-		Data: map[string]string{
-			"X-Shopify-Access-Token": "shpat_xxxxx",
-			"refresh_token": "xxxx",
-		},
-		Expiry: nil,
+	connection := connections.Connection{
+		ID: "test-connection-id-123",
 	}
-	er:= credentialService.Save(ctx,cfg.ID, credential)
-	if er != nil {
-		t.Error(er.Error())
-	}	
-	
-	// RUN PIPELINE
-	errCh := make(chan error, 1)
+	for _, stream := range pipeline.Streams {
 
-	go func() {
-		errCh <- pipeline.Run(ctx)
-	}()
+		credentialService := stream.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*api.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+		credential := credentials.Credential{
+			Type: "oauth2",
 
-	// GIVE PIPELINE TIME TO PROCESS SOME DATA
-	time.Sleep(50 * time.Millisecond)
+			Data: map[string]string{
+				"X-Shopify-Access-Token": "shpat_xxxxx",
+				"refresh_token":          "xxxx",
+			},
 
-	// CANCEL
-	cancel()
+			Expiry: nil,
+		}
+		er := credentialService.Save(ctx, connection, credential)
+		if er != nil {
+			t.Error(er.Error())
+		}
 
-	err := <-errCh
+		sink := stream.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 
-	if err != nil && !errors.Is(err, context.Canceled) {
-		t.Fatalf(
-			"expected context canceled, got %v",
-			err,
-		)
+		store := stream.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
+
+		// RUN PIPELINE
+		errCh := make(chan error, 1)
+
+		go func() {
+			errCh <- stream.Run(ctx, connection)
+		}()
+
+		// GIVE PIPELINE TIME TO PROCESS SOME DATA
+		time.Sleep(50 * time.Millisecond)
+
+		// CANCEL
+		cancel()
+
+		err := <-errCh
+
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatalf(
+				"expected context canceled, got %v",
+				err,
+			)
+		}
+
+		// VERIFY CHECKPOINT EXISTS
+		state, err := store.Load(ctx, cfg.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// checkpoint MAY be nil if cancel happened before
+		// first commit completed
+		_ = state
+
+		// RESTART PIPELINE
+		err = stream.Run(ctx, connection)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// VERIFY EVENTUAL CONSISTENCY
+		if len(sink.Mstore) != 2 {
+			t.Fatalf(
+				"expected 2 records after resume, got %d",
+				len(sink.Mstore),
+			)
+		}
 	}
 
-	// VERIFY CHECKPOINT EXISTS
-	state, err := store.Load(ctx, cfg.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// checkpoint MAY be nil if cancel happened before
-	// first commit completed
-	_ = state
-
-	// RESTART PIPELINE
-	err = pipeline.Run(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// VERIFY EVENTUAL CONSISTENCY
-	if len(sink.Mstore) != 2 {
-		t.Fatalf(
-			"expected 2 records after resume, got %d",
-			len(sink.Mstore),
-		)
-	}
 }
-
-
-

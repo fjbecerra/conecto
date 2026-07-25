@@ -1,43 +1,34 @@
 package factories
 
 import (
-	"conecto/auth/connections"
 	"conecto/core/engines"
-	"conecto/core/pipeline"
-	
+	"conecto/core/streams"
 )
 
-func BuildPipeline(config ConfigPipeline) pipeline.Pipeline{
+func BuildStreams(conecto Conecto, config PipelineConfig) []streams.Stream{
 	
-	random:= &RandomImpl{}
-	sources:= NewSource(config.SourcesConfig).Build()
-	connectorRunnable := NewConnector(config.ConnectorConfig, random, sources).Build()
-	transform := NewTransform(config.TransformersConfig, config.FieldsSpecsConfig, config.RuntimeConfig).Build()
-	stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, sources).Build()
-	sinkCommiter := NewSink(config.SinkConfig, config.FieldsSpecsConfig, random, stateStore, sources).Build()
+	// random:= &RandomImpl{}
+	// sources:= NewSource(config.SourcesConfig).Build()
 	
+	streams := []streams.Stream{}
+	for _, streamConfig := range config.StreamsConfig {
+		connector := NewConnector(config.ConnectorConfig, streamConfig, conecto.random, conecto.connections).Build()
+		transform := NewTransform(streamConfig.TransformersConfig, streamConfig.FieldsSpecsConfig).Build()
+		//stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, sources).Build()
+		sinkCommiter := NewSink(config.SinkConfig, streamConfig.FieldsSpecsConfig, conecto.random, conecto.stateStore, conecto.connections).Build()
+		
 
-	engine := engines.Engine {
-		ConnectorRunnable: connectorRunnable,
-        Transformer: transform,
-		SinkCommiter: sinkCommiter,
+		engine := engines.Engine {
+			ConnectorRunnable: connector,
+			Transformer: transform,
+			SinkCommiter: sinkCommiter,
+		}
+		stream := streams.Stream{
+			Engine: &engine,
+			StateStore: conecto.stateStore,
+		}
+		streams = append(streams, stream)
 	}
 
-	// connectionStore := connections.NewMemoryStore()
-	// connectionStore.Get(ctx, config.ID)
-
-	return pipeline.Pipeline{
-		Connection: connections.Connection{
-			ID: config.ID,
-			TenantID: "agency_x",
-			Provider: "shopify",
-			ExternalID: "shop1",
-			Metadata: map[string]any{
-				"shop": "shop1",
-			},
-			Status: "active",
-		},
-		Engine: &engine,
-        StateStore: stateStore,
-	}
+	return streams
 }

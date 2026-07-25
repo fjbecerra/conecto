@@ -1,23 +1,22 @@
-package _http
+package api
 
 import (
 	"regexp"
+
 	"github.com/tidwall/gjson"
 )
 
-
 type CursorExtractor interface {
-    Extract(resp *HttpResponse) (*PageCursor, bool)
+	Extract(resp *HttpResponse) (*PageCursor, bool)
 }
 
 type JSONCursorExtractor struct {
-   Path string
+	Path string
 }
 
-func (e *JSONCursorExtractor) Extract(resp *HttpResponse,) (*PageCursor, bool) {
+func (e *JSONCursorExtractor) Extract(resp *HttpResponse) (*PageCursor, bool) {
 
-	next := gjson.GetBytes(resp.Body,e.Path,
-	).String()
+	next := gjson.GetBytes(resp.Body, e.Path).String()
 
 	if next == "" {
 		return nil, false
@@ -31,7 +30,7 @@ func (e *JSONCursorExtractor) Extract(resp *HttpResponse,) (*PageCursor, bool) {
 
 type LinkHeaderExtractor struct{}
 
-func (e *LinkHeaderExtractor) Extract(resp *HttpResponse,) (*PageCursor, bool) {
+func (e *LinkHeaderExtractor) Extract(resp *HttpResponse) (*PageCursor, bool) {
 
 	link := resp.Headers.Get("Link")
 

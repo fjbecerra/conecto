@@ -1,6 +1,7 @@
 package credentials
 
 import (
+	"conecto/auth/connections"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -21,9 +22,9 @@ func NewAESGCMCredentialService(store Store, keyManager KeyManager) *AESGCMCrede
 	}
 }
 
-func (s *AESGCMCredentialService) Get(context context.Context, ID string) (Credential, error) {
+func (s *AESGCMCredentialService) Get(context context.Context, connection connections.Connection) (Credential, error) {
 
-	record, err := s.Store.GetCredential(context, ID)
+	record, err := s.Store.GetCredential(context, connection)
 
 	if err != nil {
 		return Credential{}, err
@@ -51,7 +52,7 @@ func (s *AESGCMCredentialService) Get(context context.Context, ID string) (Crede
 	return token, err
 }
 
-func (s *AESGCMCredentialService) Save(context context.Context, ID string, credential Credential) error {
+func (s *AESGCMCredentialService) Save(context context.Context, connection connections.Connection, credential Credential) error {
 
 	raw, err := json.Marshal(credential)
 	if err != nil {
@@ -75,7 +76,7 @@ func (s *AESGCMCredentialService) Save(context context.Context, ID string, crede
 		ExpiresAt:  credential.Expiry,
 	}
 
-	return s.Store.SaveCredential(context,ID, record)
+	return s.Store.SaveCredential(context, connection, record)
 }
 
 func (s *AESGCMCredentialService) Close() error {

@@ -1,4 +1,4 @@
-package _http
+package api
 
 type PageCursor struct {
 	Value string
@@ -9,7 +9,3 @@ type Page[T any] struct {
 	NextCursor *PageCursor
 	HasMore    bool
 }
-
-
-
-

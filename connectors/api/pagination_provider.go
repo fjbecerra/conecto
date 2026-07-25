@@ -1,22 +1,21 @@
-package _http
+package api
 
 import (
+	"conecto/auth/connections"
 	"context"
 	"encoding/json"
-	"conecto/auth/connections"
-
 )
 
 type PaginationProvider struct {
 	Builder RequestBuilder
-    Client * Client
-    Data DataExtractor
-    Cursor CursorExtractor
+	Client  *Client
+	Data    DataExtractor
+	Cursor  CursorExtractor
 }
 
 func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection connections.Connection) (Page[json.RawMessage], error) {
-    
-	 req, err := p.Builder.Build(context, cursor)
+
+	req, err := p.Builder.Build(context, cursor)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}

@@ -5,6 +5,7 @@ import (
 	"conecto/auth/credentials"
 	"conecto/auth/oauth/state"
 	"conecto/connectors"
+	"conecto/sync"
 	"context"
 	"errors"
 	"net/url"
@@ -15,18 +16,21 @@ type Service struct {
 	credentialService 	credentials.CredentialService
 	stateSigner	    	state.StateSigner      
 	registry        	connectors.Registry
+	syncService 		sync.SyncService
 }
 
 func NewService(
 	connectionStore connections.Store,
 	credentialService credentials.CredentialService,
 	stateSigner state.StateSigner,
-	registry connectors.Registry) *Service {
+	registry connectors.Registry,
+	syncService sync.SyncService) *Service {
 		return &Service{
 			connectionStore: connectionStore,
 			credentialService: credentialService,
 			stateSigner: stateSigner,
 			registry: registry,
+			syncService: syncService,
 		}
 }
 
@@ -73,16 +77,11 @@ func (s *Service) HandleCallback(ctx context.Context, values url.Values) error {
 
 
 	// 2. Load connection
-	connection, err :=
-		s.connectionStore.Get(
-			ctx,
-			connectionID,
-		)
+	connection, err :=s.connectionStore.Get(ctx,connectionID)
 
 	if err != nil {
 		return err
 	}
-
 
 	// 3. Get connector
 	connector, err := s.registry.Get(connection.Provider)
@@ -101,9 +100,12 @@ func (s *Service) HandleCallback(ctx context.Context, values url.Values) error {
 
 
 	// 5. Save credential securely
-	return s.credentialService.Save(
+	s.credentialService.Save(
 			ctx,
-			connectionID,
+			connection,
 			credential,
-		)
+	)
+
+	//6. Start sync job
+	return s.syncService.ScheduleConnectionSync(ctx,connection)
 }

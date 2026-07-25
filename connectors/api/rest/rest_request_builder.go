@@ -1,20 +1,20 @@
 package rest
 
 import (
+	"conecto/connectors/api"
 	"context"
 	"net/http"
 	"net/url"
-	"conecto/connectors/_http"
 )
 
 type RestRequestBuilder struct {
-	BaseURL      string
-	Method       string
-	CursorParam  string
-	Headers      map[string]string
+	BaseURL     string
+	Method      string
+	CursorParam string
+	Headers     map[string]string
 }
 
-func (b *RestRequestBuilder) Build(ctx context.Context,cursor *_http.PageCursor,) (*http.Request, error) {
+func (b *RestRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor) (*http.Request, error) {
 
 	u, err := url.Parse(b.BaseURL)
 	if err != nil {
@@ -47,4 +47,3 @@ func (b *RestRequestBuilder) Build(ctx context.Context,cursor *_http.PageCursor,
 
 	return req, nil
 }
-

@@ -1,4 +1,4 @@
-package _http
+package api
 
 import (
 	"io"
@@ -14,7 +14,7 @@ type HttpClient struct {
 	Client *http.Client
 }
 
-func (c *HttpClient) Fetch(req *http.Request) (*HttpResponse, error) {	
+func (c *HttpClient) Fetch(req *http.Request) (*HttpResponse, error) {
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
@@ -34,10 +34,10 @@ func (c *HttpClient) Fetch(req *http.Request) (*HttpResponse, error) {
 	}, nil
 }
 
-func (c *HttpClient) Close() error{
+func (c *HttpClient) Close() error {
 	if c.Client != nil {
-        c.Client.CloseIdleConnections()
-    }
+		c.Client.CloseIdleConnections()
+	}
 
-    return nil
+	return nil
 }

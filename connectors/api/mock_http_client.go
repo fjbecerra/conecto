@@ -1,4 +1,4 @@
-package _http
+package api
 
 import (
 	"encoding/json"
@@ -7,18 +7,18 @@ import (
 
 type MockHttpClient struct {
 	Calls map[int]string
-
 }
 
 var pageCount = -1
-func (m *MockHttpClient) Fetch(req *http.Request) (*HttpResponse, error){
+
+func (m *MockHttpClient) Fetch(req *http.Request) (*HttpResponse, error) {
 	pageCount++
 	return extract(m.Calls[pageCount])
-	
+
 }
 
 func (m *MockHttpClient) Close() error {
-	return nil	
+	return nil
 }
 
 func extract(body string) (*HttpResponse, error) {
@@ -26,6 +26,3 @@ func extract(body string) (*HttpResponse, error) {
 		Body: json.RawMessage([]byte(body)),
 	}, nil
 }
-
-
-

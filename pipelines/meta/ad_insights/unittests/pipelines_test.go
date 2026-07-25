@@ -1,8 +1,9 @@
 package unittests
 
 import (
+	"conecto/auth/connections"
 	"conecto/auth/credentials"
-	"conecto/connectors/_http"
+	"conecto/connectors/api"
 	"conecto/core/engines"
 	"conecto/factories"
 	"conecto/sinks/memory"
@@ -16,81 +17,90 @@ import (
 
 func TestMain(m *testing.M) {
 
-   	os.Setenv("TOKEN_ENCRYPTION_KEY_V1", "z1Wbj51mq1GmIpmwAfLv9X5oSekOYEsC/9YXhOCuKjU=")
+	os.Setenv("TOKEN_ENCRYPTION_KEY_V1", "z1Wbj51mq1GmIpmwAfLv9X5oSekOYEsC/9YXhOCuKjU=")
 	code := m.Run()
 	os.Exit(code)
 }
 
-func TestMockedFbAdInsightPipelineRawData(t *testing.T) {	
+func TestMockedFbAdInsightPipelineRawData(t *testing.T) {
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_raw_data_to_memory.json")
-	pipeline:= factories.BuildPipeline(config)
-	
-	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
-	
-	credential := credentials.Credential{
+	config := factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_raw_data_to_memory.json")
+	pipeline := factories.BuildPipeline(config)
+	connection := connections.Connection{
+		ID: "test-connection-id-123",
+	}
+	for _, stream := range pipeline.Streams {
+		credentialService := stream.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*api.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
+
+		credential := credentials.Credential{
 			Type: "oauth2",
 
 			Data: map[string]string{
-				"access_token": "shpat_xxxxx",
+				"access_token":  "shpat_xxxxx",
 				"refresh_token": "xxxx",
 			},
 
 			Expiry: nil,
-	}
-	
-	error:= credentialService.Save(context, config.ID, credential)
-	if error != nil {
-		t.Error(error.Error())
-	}	
-	error= pipeline.Run(context)
-	if error != nil {
-		t.Error(error.Error())
+		}
+
+		error := credentialService.Save(context, connection, credential)
+		if error != nil {
+			t.Error(error.Error())
+		}
+		error = stream.Run(context, connection)
+		if error != nil {
+			t.Error(error.Error())
+		}
+
+		memSink := stream.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
+
+		if len(memSink.Mstore) != 4 {
+			t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
+		}
 	}
 
-	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
-	
-	if len(memSink.Mstore) != 4 {
-		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
-	}	
 }
 
-func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {	
+func TestMockedFbAdInsightPipelineFlattened(t *testing.T) {
 	context := context.Background()
-	config:= factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_flattened_data_to_memory.json")
+	config := factories.LoadConfigPipeline("./testdata/ad_insight_test_pipeline_flattened_data_to_memory.json")
 
-	pipeline:= factories.BuildPipeline(config)
+	pipeline := factories.BuildPipeline(config)
+	connection := connections.Connection{
+		ID: "test-connection-id-123",
+	}
+	for _, stream := range pipeline.Streams {
+		credentialService := stream.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*api.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
 
-	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
-	
-	credential := credentials.Credential{
+		credential := credentials.Credential{
 			Type: "oauth2",
 
 			Data: map[string]string{
-				"access_token": "shpat_xxxxx",
+				"access_token":  "shpat_xxxxx",
 				"refresh_token": "xxxx",
 			},
 
 			Expiry: nil,
-	}
-	
-	error:= credentialService.Save(context, config.ID, credential)
-	if error != nil {
-		t.Error(error.Error())
-	}		
+		}
 
-	error= pipeline.Run(context)
-	if error != nil {
-		t.Error(error.Error())
+		error := credentialService.Save(context, connection, credential)
+		if error != nil {
+			t.Error(error.Error())
+		}
+
+		error = stream.Run(context, connection)
+		if error != nil {
+			t.Error(error.Error())
+		}
+
+		memSink := stream.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
+
+		if len(memSink.Mstore) != 4 {
+			t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
+		}
 	}
 
-	memSink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
-	
-	if len(memSink.Mstore) != 4 {
-		t.Errorf("number of record expected is 4, returned: %d", len(memSink.Mstore))
-	}	
 }
-
 
 func TestPipeline_CancelAndResume(t *testing.T) {
 
@@ -102,75 +112,77 @@ func TestPipeline_CancelAndResume(t *testing.T) {
 	)
 
 	pipeline := factories.BuildPipeline(cfg)
+	connection := connections.Connection{
+		ID: "test-connection-id-123",
+	}
+	for _, stream := range pipeline.Streams {
+		sink := stream.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
 
-	sink := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).Sink.(*memory.SinkMemory)
+		store := stream.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
 
-	store := pipeline.Engine.SinkCommiter.(*engines.SinkEngine).StateStore.(*states.MemoryStateStore)
+		credentialService := stream.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*api.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
 
-	credentialService:= pipeline.Engine.ConnectorRunnable.(*engines.ConnectorEngine).Connector.(*_http.HttpConnector).Provider.Client.CredentialService.(*credentials.AESGCMCredentialService)
-	
-	credential := credentials.Credential{
+		credential := credentials.Credential{
 			Type: "oauth2",
 
 			Data: map[string]string{
-				"access_token": "shpat_xxxxx",
+				"access_token":  "shpat_xxxxx",
 				"refresh_token": "xxxx",
 			},
 
 			Expiry: nil,
+		}
+
+		er := credentialService.Save(ctx, connection, credential)
+		if er != nil {
+			t.Error(er.Error())
+		}
+
+		// RUN PIPELINE
+		errCh := make(chan error, 1)
+
+		go func() {
+			errCh <- stream.Run(ctx, connection)
+		}()
+
+		// GIVE PIPELINE TIME TO PROCESS SOME DATA
+		time.Sleep(50 * time.Millisecond)
+
+		// CANCEL
+		cancel()
+
+		err := <-errCh
+
+		if err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatalf(
+				"expected context canceled, got %v",
+				err,
+			)
+		}
+
+		// VERIFY CHECKPOINT EXISTS
+		state, err := store.Load(ctx, cfg.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// checkpoint MAY be nil if cancel happened before
+		// first commit completed
+		_ = state
+
+		// RESTART PIPELINE
+		err = stream.Run(ctx, connection)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// VERIFY EVENTUAL CONSISTENCY
+		if len(sink.Mstore) != 4 {
+			t.Fatalf(
+				"expected 4 records after resume, got %d",
+				len(sink.Mstore),
+			)
+		}
 	}
-	
-	er:= credentialService.Save(ctx, cfg.ID, credential)
-	if er != nil {
-		t.Error(er.Error())
-	}	
-	
-	// RUN PIPELINE
-	errCh := make(chan error, 1)
 
-	go func() {
-		errCh <- pipeline.Run(ctx)
-	}()
-
-	// GIVE PIPELINE TIME TO PROCESS SOME DATA
-	time.Sleep(50 * time.Millisecond)
-
-	// CANCEL
-	cancel()
-
-	err := <-errCh
-
-	if err != nil && !errors.Is(err, context.Canceled) {
-		t.Fatalf(
-			"expected context canceled, got %v",
-			err,
-		)
-	}
-
-	// VERIFY CHECKPOINT EXISTS
-	state, err := store.Load(ctx, cfg.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// checkpoint MAY be nil if cancel happened before
-	// first commit completed
-	_ = state
-
-	// RESTART PIPELINE
-	err = pipeline.Run(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// VERIFY EVENTUAL CONSISTENCY
-	if len(sink.Mstore) != 4 {
-		t.Fatalf(
-			"expected 4 records after resume, got %d",
-			len(sink.Mstore),
-		)
-	}
 }
-
-
-

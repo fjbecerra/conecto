@@ -2,10 +2,10 @@ package graphql
 
 import (
 	"bytes"
+	"conecto/connectors/api"
 	"context"
 	"encoding/json"
-    "net/http"
-    "conecto/connectors/_http"
+	"net/http"
 )
 
 type GraphQLRequestBuilder struct {
@@ -21,7 +21,7 @@ type graphQLBody struct {
 	Variables map[string]any `json:"variables,omitempty"`
 }
 
-func (b *GraphQLRequestBuilder) Build(ctx context.Context,cursor *_http.PageCursor,) (*http.Request, error) {
+func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor) (*http.Request, error) {
 
 	vars := map[string]any{}
 

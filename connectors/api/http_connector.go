@@ -1,8 +1,8 @@
-package _http
+package api
 
 import (
-	"conecto/core"
 	"conecto/auth/connections"
+	"conecto/core"
 	"conecto/core/statestores"
 	"context"
 	"fmt"
@@ -48,6 +48,6 @@ func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cu
 	}, nil
 }
 
-func (c *HttpConnector) Close() error {	
-    return c.Provider.Close()
+func (c *HttpConnector) Close() error {
+	return c.Provider.Close()
 }

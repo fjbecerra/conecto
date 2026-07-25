@@ -1,11 +1,15 @@
-package oauth
+package unittest
 
 import (
 	"conecto/auth/connections"
 	"conecto/auth/credentials"
+	"conecto/auth/oauth"
 	"conecto/auth/oauth/state"
 	"conecto/connectors"
 	"conecto/connectors/shopify"
+	"conecto/factories"
+	"conecto/pipelines"
+	"conecto/sync"
 	"context"
 	"encoding/base64"
 	"net/http"
@@ -114,8 +118,12 @@ func TestCallbackEndpoint(t *testing.T) {
 	// Verify credential was stored
 	credential, err := credentialService.Get(
 		ctx,
-		"conn_123",
+		connections.Connection{
+			ID: "conn_123",
+		},
 	)
+	require.NoError(t, err)
+	
 
 	require.NoError(t, err)
 
@@ -160,15 +168,26 @@ func setupRouterWithFakeConnector(context context.Context, credentialService cre
 	}		
 	registry := connectors.NewRegistry(shopifyConnector)
 
-	service := NewService(
+	queue := sync.NewQueue(10)
+	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_flattened_data_to_memory.json")
+	pipeline:= factories.BuildPipeline(config)
+	pipeRegistry:= pipelines.NewRegistry()
+	pipeRegistry.Register(pipeline)
+	jobRepository:= sync.NewMemoryJobRepository()
+
+	syncService := sync.NewSyncService(queue, pipeRegistry, connectionStore, jobRepository)
+
+
+	service := oauth.NewService(
 				connectionStore,
 				credentialService,
 				stateSigner,
-				*registry)
+				*registry, *syncService)
 
-	handler := NewHandler(service)
 
-	return NewRouter(handler)
+	handler := oauth.NewHandler(service)
+
+	return oauth.NewRouter(handler)
 }
 
 type MockRoundTripper struct {

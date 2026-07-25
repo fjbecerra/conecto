@@ -1,9 +1,9 @@
-package _http
+package api
 
 import (
 	"conecto/auth/credentials"
-	"net/http"
 	"errors"
+	"net/http"
 )
 
 type Provider interface {
@@ -39,7 +39,7 @@ func (b *BearerProvider) Apply(req *http.Request, credential credentials.Credent
 	token := credential.Data[b.Key]
 	req.Header.Set(
 		"Authorization",
-		"Bearer " + token,
+		"Bearer "+token,
 	)
 	return nil
 }

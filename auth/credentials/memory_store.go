@@ -1,6 +1,7 @@
 package credentials
 
 import (
+	"conecto/auth/connections"
 	"context"
 	"time"
 )
@@ -15,9 +16,9 @@ func NewMemoryStoreCredential(store map[string]any) *MemoryStoreCredential {
 	}
 }
 
-func (p *MemoryStoreCredential) SaveCredential(context context.Context, ID string, record EncryptedCredential) error {
+func (p *MemoryStoreCredential) SaveCredential(context context.Context, connection connections.Connection, record EncryptedCredential) error {
 
-	p.Store["pipeline_id"] = ID
+	p.Store["pipeline_id"] = connection.ID
 	p.Store["ciphertext"] = record.Ciphertext
 	p.Store["nonce"] = record.Nonce
 	p.Store["key_version"] = record.KeyVersion
@@ -26,7 +27,7 @@ func (p *MemoryStoreCredential) SaveCredential(context context.Context, ID strin
 	return nil
 }
 
-func (p *MemoryStoreCredential) GetCredential(context context.Context, ID string) (EncryptedCredential, error) {
+func (p *MemoryStoreCredential) GetCredential(context context.Context, connection connections.Connection) (EncryptedCredential, error) {
 	return EncryptedCredential{
 		Ciphertext: p.Store["ciphertext"].([]byte),
 		Nonce: p.Store["nonce"].([]byte),

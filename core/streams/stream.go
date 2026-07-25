@@ -1,4 +1,4 @@
-package pipeline
+package streams
 
 import (
 	"conecto/auth/connections"
@@ -12,17 +12,17 @@ import (
 )
 
 type EngineRunner interface {
-	Run(context context.Context) error
+	Run(context context.Context, connection connections.Connection) error
 	Shutdown(context context.Context) error
 }
 
-type Pipeline struct {
-	Connection 	connections.Connection
+
+type Stream struct {
 	Engine 		*engines.Engine
 	StateStore  statestores.StateStore
 }
 
-func (p *Pipeline) Run(context context.Context) error {
+func (p *Stream) Run(context context.Context,connection connections.Connection) error {
 	
 	defer p.Shutdown(context)
 
@@ -30,7 +30,7 @@ func (p *Pipeline) Run(context context.Context) error {
 	g, ctxWithCancel := errgroup.WithContext(context)
 
 	// LOAD CHECKPOINT (ONLY ONCE)
-	state, err := p.StateStore.Load(ctxWithCancel, p.Connection.ID)
+	state, err := p.StateStore.Load(ctxWithCancel, connection.ID)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (p *Pipeline) Run(context context.Context) error {
 			ctxWithCancel,
 			state,
 			batches,
-			p.Connection,
+			connection,
 		)
 	})
 
@@ -74,7 +74,7 @@ func (p *Pipeline) Run(context context.Context) error {
 
             if err := p.Engine.SinkCommiter.Commit(
                 ctxWithCancel,
-				p.Connection.ID,
+				connection.ID,
                 batch,
             ); err != nil {
                 return err
@@ -92,13 +92,13 @@ func (p *Pipeline) Run(context context.Context) error {
 			return nil
 
 		case errors.Is(err, ctxWithCancel.Err()):
-			p.StateStore.Save(ctxWithCancel, p.Connection.ID, statestores.State{
+			p.StateStore.Save(ctxWithCancel, connection.ID, statestores.State{
 				Status: statestores.Stopped,
 			})
 			return err
 
 		default:
-			p.StateStore.Save(ctxWithCancel,p.Connection.ID, statestores.State{
+			p.StateStore.Save(ctxWithCancel, connection.ID, statestores.State{
 				Status: statestores.Failed,
 			})
 			return err
@@ -106,7 +106,7 @@ func (p *Pipeline) Run(context context.Context) error {
 
 }
 
-func (p *Pipeline) Shutdown(ctx context.Context) error {
+func (p *Stream) Shutdown(ctx context.Context) error {
 
     var errs []error
 

@@ -80,5 +80,16 @@
       "type": "postgres",
       "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
     }
-  }
+  },
+  "streams":[
+    {
+      "stream_id" : "orders",
+      "mocked_rest":{
+        "response_paths" : [
+          "./testdata/response_page_1_orders.json",
+          "./testdata/response_page_2_orders.json"
+        ]
+      }
+    }
+  ]
 }

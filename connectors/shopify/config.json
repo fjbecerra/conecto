@@ -1,0 +1,67 @@
+{
+    "connector" : {
+       
+        "api" : {
+            "type" : "graphql",
+            "retry": {
+                "max_retries": 3,
+                "backoff_ms": 500,
+                "max_backoff" : 500
+            },
+            "graphql":{
+                "data": {
+                    "path" : "data.orders.edges",
+                    "is_array": true    
+                },
+                "authentication" : {
+                    "type" : "header",
+                    "param_name" : "X-Shopify-Access-Token"
+                },   
+                "pagination": {
+                    "has_more_path": "data.orders.pageInfo.hasNextPage",
+                    "cursor_path" : "data.orders.pageInfo.endCursor"  
+                },
+                "token_store":{
+                    "type": "memory"
+            }
+        },
+        "streams":[
+            {
+                "stream_id" : "orders",
+                "mocked_rest":{
+                    "response_paths" : [
+                    "./testdata/response_page_1_orders.json",
+                    "./testdata/response_page_2_orders.json"
+                    ]
+                },
+                "transformers" : [{ 
+                    "type":"extractor", 
+                    "extractor":{
+                        "fields_specs": {
+                             "id": { "path": "id", "type": "string","required" : true, "default": null }
+                        }
+                    }
+                }
+                ],
+                "destination" : {
+                    "name" :  "SHOPIFY_ORDERS",
+                    "keys" : "x,y"
+                }   
+            }
+        ]
+    },
+    "sink" : {
+        "type" : "postgres",
+        "batch_size" : 10,
+        "retry": {
+            "max_retries": 3,
+            "backoff_ms": 500,
+            "max_backoff" : 500
+        },
+        "schema" : {
+            "auto_create" : true       
+        },
+        "source" : "source1"
+    }
+}
+}

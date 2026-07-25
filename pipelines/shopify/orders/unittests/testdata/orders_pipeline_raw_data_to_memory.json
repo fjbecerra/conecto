@@ -23,12 +23,6 @@
       "token_store":{
         "type": "memory"
       }      
-    },
-    "mocked_rest":{
-      "response_paths" : [
-        "./testdata/response_page_1_orders.json",
-        "./testdata/response_page_2_orders.json"
-      ]
     }
   },
   "sink" : {
@@ -44,5 +38,16 @@
     "state_store": {
       "type" : "memory"
     }
-  }
+  },
+  "streams":[
+    {
+      "stream_id" : "orders",
+      "mocked_rest":{
+        "response_paths" : [
+          "./testdata/response_page_1_orders.json",
+          "./testdata/response_page_2_orders.json"
+        ]
+      }
+    }
+  ]
 }

@@ -1,16 +1,17 @@
 package graphql
 
 import (
-	"conecto/connectors/_http"
+	"conecto/connectors/api"
+
 	"github.com/tidwall/gjson"
 )
 
 type GraphQLCursorExtractor struct {
 	HasMorePath string
-	CursorPath string
+	CursorPath  string
 }
 
-func (e *GraphQLCursorExtractor) Extract(resp *_http.HttpResponse,) (*_http.PageCursor, bool) {
+func (e *GraphQLCursorExtractor) Extract(resp *api.HttpResponse) (*api.PageCursor, bool) {
 
 	hasMore := gjson.GetBytes(
 		resp.Body,
@@ -26,7 +27,7 @@ func (e *GraphQLCursorExtractor) Extract(resp *_http.HttpResponse,) (*_http.Page
 		e.CursorPath,
 	).String()
 
-	return &_http.PageCursor{
+	return &api.PageCursor{
 		Value: cursor,
 	}, true
 
