@@ -5,26 +5,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 )
 
 type PostgresCredentialDB struct {
 	db *sql.DB
 }
 
-func NewPostgresCredentialDB(dsn string) *PostgresCredentialDB {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Connected!")
-
+func NewPostgresCredentialDB(db *sql.DB) *PostgresCredentialDB {
 	return &PostgresCredentialDB{
 		db: db,
 	}

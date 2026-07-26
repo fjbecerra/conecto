@@ -6,7 +6,7 @@ import (
 )
 
 type StreamConfig struct {
-	Id  string `json:"stream_id"`
+	ID  string `json:"id"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
 	TransformersConfig []TransformerConfig `json:"transformers"`
 	DestinationConfig DestinationConfig `json:"destination"`
@@ -37,7 +37,6 @@ type RestConfig struct{
 	BaseUrl string `json:"base_url"`
 	DataConfig DataConfig `json:"data"`
     PaginationConfig PaginationConfig `json:"pagination"`
-	TokenStoreConfig TokenStoreConfig `json:"token_store"`
 	AuthenticationConfig AuthenticationConfig `json:"authentication"`	
 }
 
@@ -46,7 +45,6 @@ type GraphqlConfig struct {
 	Query 	string `json:"query"`
 	DataConfig DataConfig `json:"data"`
     PaginationConfig GraphqlPaginationConfig `json:"pagination"`
-	TokenStoreConfig TokenStoreConfig `json:"token_store"`
 	AuthenticationConfig AuthenticationConfig `json:"authentication"`
 }
 
@@ -74,8 +72,13 @@ type PaginationConfig struct {
 	} `json:"response"`
 }
 
-type TokenStoreConfig struct {
-	Type TokenStoreType `json:"type"`
+type CredentialConfig struct {
+	Type CredentialStoreType `json:"type"`
+	CredentialStoreConfig CredentialStoreConfig `json:"store"`
+	
+}
+
+type CredentialStoreConfig struct {
 	AutoCreate bool `json:"auto_create"`
 	Name string `json:"name"`
 	Source string `json:"source"`
@@ -126,8 +129,8 @@ type FieldsSpecs map[string]struct{
 	Required bool		`json:"required"`
 }
 
-type RuntimeConfig struct {
-	StateStoreConfig StateStoreConfig `json:"state_store"`
+type StateConfig struct {
+	StateStoreConfig StateStoreConfig `json:"store"`
 }
 
 type StateStoreConfig struct {
@@ -152,11 +155,13 @@ type PipelineConfig struct {
 
 type SyncConfig struct{}
 
-type ConfigApp struct {
-	RuntimeConfig RuntimeConfig `json:"runtime"`
+type ConectoConfig struct {
+	StateConfig StateConfig `json:"state"`
 	SourcesConfig SourcesConfig `json:"sources"`
 	SyncConfig SyncConfig `json:"sync"`
-	PipelinesConfig []string `json:"pipelines"`
+	PipelineRegisterConfig []string `json:"pipeline_register"`
+	CredentialConfig CredentialConfig `json:"credential"`
+
 }
 
 
@@ -206,10 +211,10 @@ const(
 	PostgresStateStore StateStoreType = "postgres"
 )
 
-type TokenStoreType string
+type CredentialStoreType string
 const(
-	MemoryTokenStore TokenStoreType = "memory"
-	PostgresTokenStore TokenStoreType = "postgres"
+	MemoryCredentialStore CredentialStoreType = "memory"
+	PostgresCredentialStore CredentialStoreType = "postgres"
 )
 
 type SourcesType string

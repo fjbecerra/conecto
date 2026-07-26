@@ -1,21 +1,59 @@
 package factories
 
 import (
+	"conecto/auth/credentials"
 	"conecto/core/engines"
+	"conecto/core/pipelines"
+	"conecto/core/retry"
+	"conecto/core/statestores"
 	"conecto/core/streams"
 )
 
-func BuildStreams(conecto Conecto, config PipelineConfig) []streams.Stream{
-	
-	// random:= &RandomImpl{}
-	// sources:= NewSource(config.SourcesConfig).Build()
-	
-	streams := []streams.Stream{}
-	for _, streamConfig := range config.StreamsConfig {
-		connector := NewConnector(config.ConnectorConfig, streamConfig, conecto.random, conecto.connections).Build()
-		transform := NewTransform(streamConfig.TransformersConfig, streamConfig.FieldsSpecsConfig).Build()
-		//stateStore := NewStateStore(config.RuntimeConfig.StateStoreConfig, sources).Build()
-		sinkCommiter := NewSink(config.SinkConfig, streamConfig.FieldsSpecsConfig, conecto.random, conecto.stateStore, conecto.connections).Build()
+type Pipeline struct {
+	connections  Connections
+	random       retry.Random
+	stateStore 	 statestores.StateStore
+	credentialService credentials.CredentialService
+	config 		 PipelineConfig
+}
+
+func NewPipeline(
+	connections  Connections,
+	random       retry.Random,
+	stateStore 	 statestores.StateStore,
+	credentialService credentials.CredentialService,
+	config PipelineConfig,
+	) Pipeline{
+	return Pipeline{
+		connections: connections,
+		random: random,
+		stateStore: stateStore,
+		credentialService: credentialService,
+		config: config,
+	}
+}
+
+func (p *Pipeline) Build() pipelines.Pipeline{
+	streams := []pipelines.Stream{}
+	for _, streamConfig := range p.config.StreamsConfig {
+		connector := NewConnector(
+			p.config.ConnectorConfig, 
+			streamConfig, 
+			p.random, 
+			p.credentialService,
+		).Build()
+		transform := NewTransform(
+			streamConfig.TransformersConfig, 
+			streamConfig.FieldsSpecsConfig,
+		).Build()
+		sinkCommiter := NewSink(
+			p.config.SinkConfig, 
+			streamConfig.FieldsSpecsConfig, 
+			p.random, 
+			p.stateStore,
+			p.connections, 
+			streamConfig.DestinationConfig,
+		).Build()
 		
 
 		engine := engines.Engine {
@@ -23,12 +61,16 @@ func BuildStreams(conecto Conecto, config PipelineConfig) []streams.Stream{
 			Transformer: transform,
 			SinkCommiter: sinkCommiter,
 		}
-		stream := streams.Stream{
+		stream := pipelines.Stream{
 			Engine: &engine,
-			StateStore: conecto.stateStore,
+			StateStore: p.stateStore,
 		}
 		streams = append(streams, stream)
 	}
 
-	return streams
+	return pipelines.Pipeline{
+		Id: p.config.ID,
+		Streams: streams,
+	}
+
 }

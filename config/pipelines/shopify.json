@@ -16,10 +16,9 @@
                 "pagination": {
                     "has_more_path": "data.orders.pageInfo.hasNextPage",
                     "cursor_path" : "data.orders.pageInfo.endCursor"  
-                },
-                "token_store":{
-                    "type": "memory"
+                }
             }
+                
         },
         "retry": {
             "max_retries": 3,
@@ -28,7 +27,7 @@
         },
         "streams":[
             {
-                "stream_id" : "orders",
+                "id" : "orders",
                 "mocked_rest":{
                     "response_paths" : [
                     "./testdata/response_page_1_orders.json",
@@ -68,5 +67,4 @@
         },
         "source" : "source1"
     }
-}
 }

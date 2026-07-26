@@ -8,7 +8,6 @@ import (
 	"conecto/core/engines"
 	"conecto/core/retry"
 	"database/sql"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -19,39 +18,44 @@ type Connector struct {
 	config       ConnectorConfig
 	streamConfig StreamConfig
 	random       retry.Random
-	connections  Connections
+	credentialService credentials.CredentialService
 }
 
-func NewConnector(config ConnectorConfig, streamConfig StreamConfig, random retry.Random, connections Connections) *Connector {
-	return &Connector{
-		config:       config,
-		streamConfig: streamConfig,
-		random:       random,
-		connections:  connections,
-	}
+func NewConnector(
+	config ConnectorConfig, 
+	streamConfig StreamConfig, 
+	random retry.Random, 
+	credentialService credentials.CredentialService,
+	) *Connector {
+		return &Connector{
+			config:       config,
+			streamConfig: streamConfig,
+			random:       random,
+			credentialService: credentialService,
+		}
 }
 
 func (c *Connector) Build() engines.ConnectorRunnable {
 
-	v1, _ := base64.StdEncoding.DecodeString(
-		os.Getenv("TOKEN_ENCRYPTION_KEY_V1"),
-	)
-	keys := map[string][]byte{
-		"v1": v1,
-	}
-	keyManager := credentials.NewStaticKeyManager(keys, "v1")
+	// v1, _ := base64.StdEncoding.DecodeString(
+	// 	os.Getenv("TOKEN_ENCRYPTION_KEY_V1"),
+	// )
+	// keys := map[string][]byte{
+	// 	"v1": v1,
+	// }
+	//keyManager := credentials.NewStaticKeyManager(keys, "v1")
 
 	var provider api.Provider
 	var httpClient api.IClient
 	var builder api.RequestBuilder
 	var dataExtractor api.DataExtractor
 	var cursorExtractor api.CursorExtractor
-	var store credentials.Store
+	//var store credentials.Store
 
 	switch c.config.Type{
 		case Api: switch c.config.ApiConfig.Type {
 			case Rest:
-				store = buildStore(c.config.ApiConfig.RestConfig.TokenStoreConfig, c.connections)
+				//store = buildStore(c.config.ApiConfig.RestConfig.TokenStoreConfig, c.connections)
 				provider = buildProvider(c.config.ApiConfig.RestConfig.AuthenticationConfig)
 				builder = &rest.RestRequestBuilder{
 					BaseURL:     c.config.ApiConfig.RestConfig.BaseUrl,
@@ -71,7 +75,7 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 				}
 
 			case Graphql:
-				store = buildStore(c.config.ApiConfig.GraphqlConfig.TokenStoreConfig, c.connections)
+				//store = buildStore(c.config.ApiConfig.GraphqlConfig.TokenStoreConfig, c.connections)
 				provider = buildProvider(c.config.ApiConfig.GraphqlConfig.AuthenticationConfig)
 				builder = &graphql.GraphQLRequestBuilder{
 					Endpoint: c.config.ApiConfig.GraphqlConfig.BaseUrl,
@@ -106,8 +110,12 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 			Client: http.DefaultClient,
 		}
 	}
-	credentialService := credentials.NewAESGCMCredentialService(store, keyManager)
-	client := *api.NewClient(httpClient, provider, credentialService)
+	//credentialService := credentials.NewAESGCMCredentialService(store, keyManager)
+
+	
+
+
+	client := *api.NewClient(httpClient, provider, c.credentialService)
 
 	paginationProvider := api.PaginationProvider{
 		Client:  &client,
@@ -166,7 +174,6 @@ func buildStore(tokenStoreConfig TokenStoreConfig, connections Connections) cred
 		if tokenStoreConfig.AutoCreate {
 			createPostgresTokenStoreTable(tokenStoreConfig, connection)
 		}
-
 		return credentials.NewPostgresCredentialDB(connection)
 	case MemoryTokenStore:
 		return credentials.NewMemoryStoreCredential(make(map[string]any))

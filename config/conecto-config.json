@@ -1,21 +1,34 @@
 {
     
-    "pipelines" : [ 
-        "./pipelines/shopify.json",
-        "./pipelines/meta-adinsights.json"
+    "pipeline_register" : [  
+        "./pipelines/shopify.json" ,
+        "./pipelines/meta-adinsights.json"      
+        
     ],
     
     "sync" : {
 
     }, 
 
-    "runtime": {
-        "state_store": {
+    "state": {
+        "store" :{
             "type" : "postgres",
             "name" : "streams_state",
             "auto_create": true,
             "source" : "source1"
         }
+    },
+
+    "credential":{
+        "store": {
+             "type": "memory"
+        }                   
+    },
+
+    "connection" : {
+        "store" :{
+            "type" : "memory"
+        } 
     },
     
     
@@ -28,5 +41,10 @@
             "type": "postgres",
             "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
         }
+    },
+
+    "http_server" : {
+        "port" : 8080
+
     }
 }

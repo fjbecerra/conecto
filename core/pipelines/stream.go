@@ -1,4 +1,4 @@
-package streams
+package pipelines
 
 import (
 	"conecto/auth/connections"
