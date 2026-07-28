@@ -7,17 +7,17 @@ import (
 	"errors"
 )
 
-type PostgresCredentialDB struct {
+type PostgresCredentialStore struct {
 	db *sql.DB
 }
 
-func NewPostgresCredentialDB(db *sql.DB) *PostgresCredentialDB {
-	return &PostgresCredentialDB{
+func NewPostgresCredentialStore(db *sql.DB) *PostgresCredentialStore {
+	return &PostgresCredentialStore{
 		db: db,
 	}
 }
 
-func (p *PostgresCredentialDB) SaveCredential(context context.Context, connection connections.Connection, record EncryptedCredential) error {
+func (p *PostgresCredentialStore) Save(context context.Context, connection connections.Connection, record EncryptedCredential) error {
 
 	query := `
 	INSERT INTO oauth_tokens (
@@ -52,7 +52,7 @@ func (p *PostgresCredentialDB) SaveCredential(context context.Context, connectio
 	return err
 }
 
-func (p *PostgresCredentialDB) GetCredential(context context.Context, connection connections.Connection) (EncryptedCredential, error) {
+func (p *PostgresCredentialStore) Get(context context.Context, connection connections.Connection) (EncryptedCredential, error) {
 
 	query := `
 	SELECT
@@ -88,6 +88,6 @@ func (p *PostgresCredentialDB) GetCredential(context context.Context, connection
 	return record, nil
 }
 
-func (p *PostgresCredentialDB) Close() error {
+func (p *PostgresCredentialStore) Close() error {
 	return p.db.Close()
 }

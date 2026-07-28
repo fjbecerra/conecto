@@ -15,7 +15,7 @@ type StreamConfig struct {
 }
 
 type DestinationConfig struct {
-	Name string `json:"destination"`
+	Name string `json:"name"`
 	Keys string `json:"keys"`
 	Schema *string `json:"schema,omitempty"`
 }
@@ -30,6 +30,7 @@ type ConnectorConfig struct{
 	Type ConnectorType `json:"type"`
 	ApiConfig *ApiConfig `json:"api,omitempty"`
 	Retry RetryConfig `json:"retry"`
+	StreamsConfig []StreamConfig `json:"streams"`
 
 }
 
@@ -72,15 +73,10 @@ type PaginationConfig struct {
 	} `json:"response"`
 }
 
-type CredentialConfig struct {
-	Type CredentialStoreType `json:"type"`
-	CredentialStoreConfig CredentialStoreConfig `json:"store"`
-	
-}
 
-type CredentialStoreConfig struct {
-	AutoCreate bool `json:"auto_create"`
-	Name string `json:"name"`
+
+type StoreConfig struct {
+	StoreType StoreType `json:"type"`
 	Source string `json:"source"`
 }
 
@@ -129,17 +125,6 @@ type FieldsSpecs map[string]struct{
 	Required bool		`json:"required"`
 }
 
-type StateConfig struct {
-	StateStoreConfig StateStoreConfig `json:"store"`
-}
-
-type StateStoreConfig struct {
-	Type	StateStoreType `json:"type"`
-	Name 	string 			`json:"name"`
-	AutoCreate bool `json:"auto_create"`
-	Source string `json:"source"`
-}
-
 type SourcesConfig map[string]struct {
 	DSN  string `json:"dsn"`
 	Type SourcesType `json:"type"` 
@@ -150,18 +135,37 @@ type PipelineConfig struct {
 	ID string `json:"id"`
 	ConnectorConfig ConnectorConfig `json:"connector"`
 	SinkConfig SinkConfig `json:"sink"`
-	StreamsConfig []StreamConfig `json:"streams"`
 }
 
-type SyncConfig struct{}
+type SyncConfig struct{
+	Buffer SyncBuffer `json:"buffer"`
+	Scheduler SyncScheduler `json:"scheduler"`
+	Retry RetryConfig `json:"retry"`
+}
+
+type SyncBuffer struct {
+	BufferType BufferType `json:"type"`
+	Size int `json:"size"`
+}
+
+type SyncScheduler struct {
+	Duration string `json:"duration"`
+}
+
+type HttpServerConfig struct {
+	Port int `json:"port"`
+}
 
 type ConectoConfig struct {
-	StateConfig StateConfig `json:"state"`
 	SourcesConfig SourcesConfig `json:"sources"`
 	SyncConfig SyncConfig `json:"sync"`
-	PipelineRegisterConfig []string `json:"pipeline_register"`
-	CredentialConfig CredentialConfig `json:"credential"`
+	PipelineRegistryConfig []string `json:"pipeline_registry"`
+	StoreConfig StoreConfig `json:"stores"`
+	HttpServerConfig HttpServerConfig `json:"http_server"`
+} 
 
+type AppConfig struct {
+	ConectoConfig ConectoConfig `json:"app"`
 }
 
 
@@ -205,16 +209,10 @@ const (
 	MemorySink SinkType = "memory"
 )
 
-type StateStoreType string
+type StoreType string
 const(
-	MemoryStateStore StateStoreType = "memory"
-	PostgresStateStore StateStoreType = "postgres"
-)
-
-type CredentialStoreType string
-const(
-	MemoryCredentialStore CredentialStoreType = "memory"
-	PostgresCredentialStore CredentialStoreType = "postgres"
+	MemoryStore StoreType = "memory"
+	PostgresStore StoreType = "postgres"
 )
 
 type SourcesType string
@@ -227,6 +225,11 @@ const(
 	Query AuthenticationType = "query"
 	Header AuthenticationType = "header"
 	Bearer AuthenticationType = "bearer"
+)
+
+type BufferType string
+const(
+	QueueType BufferType = "queue"
 )
 
 

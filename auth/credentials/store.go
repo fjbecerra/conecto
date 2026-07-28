@@ -10,7 +10,7 @@ var ErrCredentialNotFound = errors.New("credential not found")
 
 
 type Store interface {
-	SaveCredential(context context.Context, connection connections.Connection, record EncryptedCredential) error
-	GetCredential(context context.Context, connection connections.Connection) (EncryptedCredential, error)
+	Save(context context.Context, connection connections.Connection, record EncryptedCredential) error
+	Get(context context.Context, connection connections.Connection) (EncryptedCredential, error)
 	Close()error
 }

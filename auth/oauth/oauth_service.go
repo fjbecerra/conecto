@@ -15,16 +15,16 @@ type Service struct {
 	connectionStore 	connections.Store
 	credentialService 	credentials.CredentialService
 	stateSigner	    	state.StateSigner      
-	registry        	connectors.Registry
-	syncService 		sync.SyncService
+	registry        	*connectors.Registry
+	syncService 		*sync.SyncService
 }
 
 func NewService(
 	connectionStore connections.Store,
 	credentialService credentials.CredentialService,
 	stateSigner state.StateSigner,
-	registry connectors.Registry,
-	syncService sync.SyncService) *Service {
+	registry *connectors.Registry,
+	syncService *sync.SyncService) *Service {
 		return &Service{
 			connectionStore: connectionStore,
 			credentialService: credentialService,

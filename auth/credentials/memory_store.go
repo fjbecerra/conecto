@@ -6,36 +6,36 @@ import (
 	"time"
 )
 
-type MemoryStoreCredential struct {
-	Store map[string]any
+type MemoryCredentialStore struct {
+	store map[string]any
 }
 
-func NewMemoryStoreCredential(store map[string]any) *MemoryStoreCredential {
-	return &MemoryStoreCredential{
-		Store: store,
+func NewMemoryCredentialStore() *MemoryCredentialStore {
+	return &MemoryCredentialStore{
+		store: make(map[string]any),
 	}
 }
 
-func (p *MemoryStoreCredential) SaveCredential(context context.Context, connection connections.Connection, record EncryptedCredential) error {
+func (p *MemoryCredentialStore) Save(context context.Context, connection connections.Connection, record EncryptedCredential) error {
 
-	p.Store["pipeline_id"] = connection.ID
-	p.Store["ciphertext"] = record.Ciphertext
-	p.Store["nonce"] = record.Nonce
-	p.Store["key_version"] = record.KeyVersion
-	p.Store["updated_at"] = record.ExpiresAt
+	p.store["pipeline_id"] = connection.ID
+	p.store["ciphertext"] = record.Ciphertext
+	p.store["nonce"] = record.Nonce
+	p.store["key_version"] = record.KeyVersion
+	p.store["updated_at"] = record.ExpiresAt
 
 	return nil
 }
 
-func (p *MemoryStoreCredential) GetCredential(context context.Context, connection connections.Connection) (EncryptedCredential, error) {
+func (p *MemoryCredentialStore) Get(context context.Context, connection connections.Connection) (EncryptedCredential, error) {
 	return EncryptedCredential{
-		Ciphertext: p.Store["ciphertext"].([]byte),
-		Nonce: p.Store["nonce"].([]byte),
-		KeyVersion:  p.Store["key_version"].(string),
-		ExpiresAt:  p.Store["updated_at"].(*time.Time),
+		Ciphertext: p.store["ciphertext"].([]byte),
+		Nonce: p.store["nonce"].([]byte),
+		KeyVersion:  p.store["key_version"].(string),
+		ExpiresAt:  p.store["updated_at"].(*time.Time),
 	},nil	
 }
 
-func (p *MemoryStoreCredential) Close() error{
+func (p *MemoryCredentialStore) Close() error{
 	return nil
 }

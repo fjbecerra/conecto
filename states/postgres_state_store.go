@@ -11,7 +11,13 @@ import (
 
 
 type PostgresStateStore struct {
-	DB *sql.DB
+	db *sql.DB
+}
+
+func NewStateStore(db *sql.DB) *PostgresStateStore{
+	return &PostgresStateStore{
+		db: db,
+	}
 }
 
 func (s *PostgresStateStore) Load(context context.Context, ID string) (statestores.State, error) {
@@ -19,7 +25,7 @@ func (s *PostgresStateStore) Load(context context.Context, ID string) (statestor
 	var cursorBytes []byte
 	var status string
 
-	err := s.DB.QueryRowContext(context,
+	err := s.db.QueryRowContext(context,
 		`SELECT cursor, status FROM pipeline_state WHERE pipeline_id=$1`,
 		ID,
 	).Scan(&cursorBytes, &status)
@@ -70,5 +76,5 @@ func (c *PostgresStateStore) Save(context context.Context, ID string,state state
 }
 
 func (c *PostgresStateStore) Close() error{
-	return c.DB.Close()
+	return c.db.Close()
 }

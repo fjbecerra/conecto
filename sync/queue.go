@@ -1,5 +1,11 @@
 package sync
 
+
+type Buffer interface {
+	 Publish(job SyncJob)
+	 Consume()<-chan SyncJob
+}
+
 type Queue struct {
 	jobs chan SyncJob
 }

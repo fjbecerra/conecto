@@ -2,12 +2,11 @@ package sync
 
 import (
 	"conecto/auth/connections"
-	"conecto/core/pipeline"
 	"conecto/pipelines"
 	"context"
 	"testing"
 	"time"
-
+    
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestScheduleDueSyncs(t *testing.T) {
 
     ctx := context.Background()
 
-    queue := NewQueue(1)
+    buffer := NewQueue(1)
 
     connectionStore := connections.NewMemoryStore()
 
@@ -38,7 +37,7 @@ func TestScheduleDueSyncs(t *testing.T) {
     connectionStore.Save(ctx, conn)
 
     service := &SyncService{
-        queue:           queue,
+        buffer:           buffer,
         registry:        registry,
         connectionStore: connectionStore,
         jobRepository:   jobRepo,
@@ -48,7 +47,7 @@ func TestScheduleDueSyncs(t *testing.T) {
     require.NoError(t, err)
 
     select {
-    case job := <-queue.Consume():
+    case job := <-buffer.Consume():
 
         require.Equal(t, conn.ID, job.ConnectionID)
         require.Equal(t, "shopify", job.PipelineID)

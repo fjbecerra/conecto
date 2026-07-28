@@ -6,7 +6,6 @@ import (
 	"conecto/core/pipelines"
 	"conecto/core/retry"
 	"conecto/core/statestores"
-	"conecto/core/streams"
 )
 
 type Pipeline struct {
@@ -23,8 +22,8 @@ func NewPipeline(
 	stateStore 	 statestores.StateStore,
 	credentialService credentials.CredentialService,
 	config PipelineConfig,
-	) Pipeline{
-	return Pipeline{
+	) *Pipeline{
+	return &Pipeline{
 		connections: connections,
 		random: random,
 		stateStore: stateStore,
@@ -35,7 +34,7 @@ func NewPipeline(
 
 func (p *Pipeline) Build() pipelines.Pipeline{
 	streams := []pipelines.Stream{}
-	for _, streamConfig := range p.config.StreamsConfig {
+	for _, streamConfig := range p.config.ConnectorConfig.StreamsConfig {
 		connector := NewConnector(
 			p.config.ConnectorConfig, 
 			streamConfig, 
@@ -69,7 +68,7 @@ func (p *Pipeline) Build() pipelines.Pipeline{
 	}
 
 	return pipelines.Pipeline{
-		Id: p.config.ID,
+		ID: p.config.ID,
 		Streams: streams,
 	}
 

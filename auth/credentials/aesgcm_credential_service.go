@@ -24,7 +24,7 @@ func NewAESGCMCredentialService(store Store, keyManager KeyManager) *AESGCMCrede
 
 func (s *AESGCMCredentialService) Get(context context.Context, connection connections.Connection) (Credential, error) {
 
-	record, err := s.Store.GetCredential(context, connection)
+	record, err := s.Store.Get(context, connection)
 
 	if err != nil {
 		return Credential{}, err
@@ -76,7 +76,7 @@ func (s *AESGCMCredentialService) Save(context context.Context, connection conne
 		ExpiresAt:  credential.Expiry,
 	}
 
-	return s.Store.SaveCredential(context, connection, record)
+	return s.Store.Save(context, connection, record)
 }
 
 func (s *AESGCMCredentialService) Close() error {

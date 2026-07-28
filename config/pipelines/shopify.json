@@ -43,7 +43,7 @@
                 ],
                 "destination" : {
                     "name" :  "SHOPIFY_ORDERS",
-                    "keys" : "x,y",
+                    "keys" : "id",
                     "schema": "default"
                 },
                 "fields_specs" : {

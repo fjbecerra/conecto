@@ -1,0 +1,42 @@
+{
+    "app": {
+        "pipeline_registry" : [  
+            "./config/pipelines/shopify.json"        
+        ],
+        
+        "sync" : {
+            "buffer" : {
+                "type" : "queue",
+                "size" : 100
+            },
+            "scheduler": {
+                "duration" : "5m"
+            },
+             "retry": {
+                "max_retries": 3,
+                "backoff_ms": 500,
+                "max_backoff" : 500
+            }
+        },
+        
+        "stores": {
+            "type" : "memory",
+            "source" : "source1"
+        },
+        
+        "sources" : {
+            "source1": {
+                "type": "postgres",
+                "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+            },
+            "source2": {
+                "type": "postgres",
+                "dsn" : "postgres://username:password@localhost:5432/database_name?sslmode=disable"         
+            }
+        },
+
+        "http_server" : {
+            "port" : 8089
+        }
+    }
+}

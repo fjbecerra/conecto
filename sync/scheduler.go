@@ -4,23 +4,37 @@ package sync
 import (
 	"conecto/auth/connections"
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type Scheduler struct {
-	SyncService    *SyncService
+	syncService    *SyncService
+	duration time.Duration
+}
+
+func NewScheduler(duration time.Duration, syncService *SyncService) Scheduler {
+	return Scheduler{
+		syncService: syncService,
+		duration: duration,
+	}
 }
 
 func (s *Scheduler) Run(ctx context.Context) {
+	slog.Info(
+		"scheduler started",
+		"interval",
+		s.duration,
+	)
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(s.duration)
 
 	defer ticker.Stop()
 
 	for range ticker.C {
-		s.SyncService.ScheduleDueSyncs(ctx)
+		s.syncService.ScheduleDueSyncs(ctx)
 	}
 }
 
@@ -43,14 +57,14 @@ func (s *Scheduler) CreateJob(
 		MaxRetries: 3,
 	}
 
-	if err := s.SyncService.jobRepository.Create(
+	if err := s.syncService.jobRepository.Create(
 		ctx,
 		job,
 	); err != nil {
 		return err
 	}
 
-	s.SyncService.queue.Publish(job)
+	s.syncService.buffer.Publish(job)
 
 	return nil
 }

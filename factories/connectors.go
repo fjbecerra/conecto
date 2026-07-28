@@ -7,8 +7,6 @@ import (
 	"conecto/connectors/api/rest"
 	"conecto/core/engines"
 	"conecto/core/retry"
-	"database/sql"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -19,6 +17,8 @@ type Connector struct {
 	streamConfig StreamConfig
 	random       retry.Random
 	credentialService credentials.CredentialService
+	connectorType ConnectorType
+
 }
 
 func NewConnector(
@@ -37,25 +37,15 @@ func NewConnector(
 
 func (c *Connector) Build() engines.ConnectorRunnable {
 
-	// v1, _ := base64.StdEncoding.DecodeString(
-	// 	os.Getenv("TOKEN_ENCRYPTION_KEY_V1"),
-	// )
-	// keys := map[string][]byte{
-	// 	"v1": v1,
-	// }
-	//keyManager := credentials.NewStaticKeyManager(keys, "v1")
-
 	var provider api.Provider
 	var httpClient api.IClient
 	var builder api.RequestBuilder
 	var dataExtractor api.DataExtractor
 	var cursorExtractor api.CursorExtractor
-	//var store credentials.Store
 
 	switch c.config.Type{
 		case Api: switch c.config.ApiConfig.Type {
 			case Rest:
-				//store = buildStore(c.config.ApiConfig.RestConfig.TokenStoreConfig, c.connections)
 				provider = buildProvider(c.config.ApiConfig.RestConfig.AuthenticationConfig)
 				builder = &rest.RestRequestBuilder{
 					BaseURL:     c.config.ApiConfig.RestConfig.BaseUrl,
@@ -75,7 +65,6 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 				}
 
 			case Graphql:
-				//store = buildStore(c.config.ApiConfig.GraphqlConfig.TokenStoreConfig, c.connections)
 				provider = buildProvider(c.config.ApiConfig.GraphqlConfig.AuthenticationConfig)
 				builder = &graphql.GraphQLRequestBuilder{
 					Endpoint: c.config.ApiConfig.GraphqlConfig.BaseUrl,
@@ -110,10 +99,6 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 			Client: http.DefaultClient,
 		}
 	}
-	//credentialService := credentials.NewAESGCMCredentialService(store, keyManager)
-
-	
-
 
 	client := *api.NewClient(httpClient, provider, c.credentialService)
 
@@ -164,46 +149,4 @@ func buildProvider(authenticationConfig AuthenticationConfig) api.Provider {
 	default:
 		panic("not token provider found")
 	}
-}
-
-func buildStore(tokenStoreConfig TokenStoreConfig, connections Connections) credentials.Store {
-
-	switch tokenStoreConfig.Type {
-	case PostgresTokenStore:
-		connection := connections[tokenStoreConfig.Source].OpenDB()
-		if tokenStoreConfig.AutoCreate {
-			createPostgresTokenStoreTable(tokenStoreConfig, connection)
-		}
-		return credentials.NewPostgresCredentialDB(connection)
-	case MemoryTokenStore:
-		return credentials.NewMemoryStoreCredential(make(map[string]any))
-	default:
-		panic("not token store found")
-	}
-}
-
-func createPostgresTokenStoreTable(tokenStoreConfig TokenStoreConfig, db *sql.DB) {
-	query := `
-		CREATE TABLE IF NOT EXISTS %s (
-			connection_id    TEXT NOT NULL,
-
-			ciphertext     BYTEA NOT NULL,
-			nonce          BYTEA NOT NULL,
-
-			key_version    TEXT NOT NULL,
-
-			expires_at     TIMESTAMPTZ,
-
-			created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-			PRIMARY KEY (connection_id)
-	);
-	`
-	_, err := db.Exec(fmt.Sprintf(query, tokenStoreConfig.Name))
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("table created or already exists")
 }

@@ -4,7 +4,7 @@ package sync
 import (
 	"conecto/auth/connections"
 	"conecto/core/retry"
-	"conecto/pipelines"
+	"conecto/core/pipelines"
 	"context"
 	"time"
 
@@ -12,7 +12,7 @@ import (
 )
 
 type SyncService struct {
-	queue            *Queue
+	buffer            Buffer
 	registry         pipelines.Registry
 	connectionStore  connections.Store
 	jobRepository    JobRepository
@@ -20,12 +20,13 @@ type SyncService struct {
 	retry 			retry.Executor
 }
 
-func NewSyncService(queue *Queue, registry pipelines.Registry, connectionStore connections.Store, jobRepository JobRepository,retry retry.Executor) *SyncService{
+func NewSyncService(buffer Buffer, registry pipelines.Registry, connectionStore connections.Store, jobRepository JobRepository,executor *Executor,retry retry.Executor) *SyncService{
 	return &SyncService{
-		queue: queue,
+		buffer: buffer,
 		registry: registry,
 		connectionStore: connectionStore,
 		jobRepository: jobRepository,
+		executor: executor,
 		retry: retry,
 	}
 }
@@ -73,7 +74,7 @@ func (s *SyncService) ScheduleDueSyncs(
 			continue
 		}
 
-		s.queue.Publish(job)
+		s.buffer.Publish(job)
 	}
 
 	return nil
@@ -107,7 +108,7 @@ func (s *SyncService) ScheduleConnectionSync(
 	}
 
 
-	s.queue.Publish(job)
+	s.buffer.Publish(job)
 
 	return nil
 }

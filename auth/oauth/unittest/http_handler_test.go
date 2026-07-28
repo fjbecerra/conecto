@@ -8,7 +8,6 @@ import (
 	"conecto/connectors"
 	"conecto/connectors/shopify"
 	"conecto/factories"
-	"conecto/pipelines"
 	"conecto/sync"
 	"context"
 	"encoding/base64"
@@ -40,7 +39,7 @@ func TestMain(m *testing.M) {
 	}
 	keyManager:=credentials.NewStaticKeyManager(keys, "v1")
 
-	credentialStore := credentials.NewMemoryStoreCredential(make(map[string]any))
+	credentialStore := credentials.NewMemoryCredentialStore()
 	
 	credentialService = credentials.NewAESGCMCredentialService(credentialStore, keyManager)
 	router = setupRouterWithFakeConnector(ctx, credentialService, stateSigner)
@@ -166,11 +165,11 @@ func setupRouterWithFakeConnector(context context.Context, credentialService cre
 				},
 			},
 	}		
-	registry := connectors.NewRegistry(shopifyConnector)
-
+	registry := connectors.NewRegistry()
+	registry.Register(shopifyConnector)
 	queue := sync.NewQueue(10)
-	config:= factories.LoadConfigPipeline("./testdata/orders_pipeline_flattened_data_to_memory.json")
-	pipeline:= factories.BuildPipeline(config)
+	config,_:= factories.LoadConfig[factories.Pipeline]("./testdata/orders_pipeline_flattened_data_to_memory.json")
+	pipeline:= factories.NewPipeline(config)
 	pipeRegistry:= pipelines.NewRegistry()
 	pipeRegistry.Register(pipeline)
 	jobRepository:= sync.NewMemoryJobRepository()

@@ -17,21 +17,13 @@ type Registry struct {
 
 
 
-func NewRegistry(items ...Connector) *Registry {
+func NewRegistry() *Registry {
 
-	r := &Registry{
-
+	return  &Registry{
 		connectors:
 		make(map[string]Connector),
 	}
 
-	for _,connector := range items {
-		r.Register(
-			connector,
-		)
-	}
-
-	return r
 }
 
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
 	"time"
 )
 
@@ -14,19 +13,7 @@ type PostgresStore struct {
 }
 
 
-func NewPostgresStore(dsn string) *PostgresStore {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Connected!")
-
+func NewPostgresStore(db *sql.DB) *PostgresStore {
 	return &PostgresStore{
 		db: db,
 	}

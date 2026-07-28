@@ -1,30 +1,30 @@
 package pipelines
 
 import (
-	"conecto/core/pipeline"
 	"fmt"
 	"sync"
 )
 
 type Registry interface {
-	Register(p pipeline.Pipeline) error
-	Get(id string) (pipeline.Pipeline, error)
+	Register(p Pipeline) error
+	Get(id string) (Pipeline, error)
+	GetAll() []Pipeline
 }
 
 type registry struct {
-	pipelines map[string]pipeline.Pipeline
+	pipelines map[string]Pipeline
 	mu        sync.RWMutex
 }
 
 
 func NewRegistry() Registry {
 	return &registry{
-		pipelines: make(map[string]pipeline.Pipeline),
+		pipelines: make(map[string]Pipeline),
 	}
 }
 
 
-func (r *registry) Register(p pipeline.Pipeline) error {
+func (r *registry) Register(p Pipeline) error {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -43,7 +43,7 @@ func (r *registry) Register(p pipeline.Pipeline) error {
 }
 
 
-func (r *registry) Get(id string) (pipeline.Pipeline, error) {
+func (r *registry) Get(id string) (Pipeline, error) {
 
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -52,12 +52,19 @@ func (r *registry) Get(id string) (pipeline.Pipeline, error) {
 	p, ok := r.pipelines[id]
 
 	if !ok {
-		return pipeline.Pipeline{}, fmt.Errorf(
+		return Pipeline{}, fmt.Errorf(
 			"pipeline %s not found",
 			id,
 		)
 	}
-
-
 	return p, nil
+}
+
+func (r *registry) GetAll() []Pipeline {
+	var pipelines []Pipeline
+	
+	for _,pipeline := range r.pipelines{
+		pipelines = append(pipelines, pipeline)
+	} 
+	return pipelines
 }

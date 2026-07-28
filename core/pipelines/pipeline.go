@@ -1,6 +1,6 @@
 package pipelines
 
 type Pipeline struct {
-	Id string
+	ID string
 	Streams []Stream
 }

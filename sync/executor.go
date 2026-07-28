@@ -1,9 +1,8 @@
-// executor.go
 package sync
 
 import (
 	"conecto/auth/connections"
-	"conecto/pipelines"
+	"conecto/core/pipelines"
 	"context"
 )
 
