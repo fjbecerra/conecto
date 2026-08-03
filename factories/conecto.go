@@ -36,7 +36,7 @@ func NewConecto(conectoConfig ConectoConfig) *Conecto{
 func (c *Conecto) Build() Runner{
 	random:= &RandomImpl{}
 	connections:= NewSource(c.conectoConfig.SourcesConfig).Build()
-	stores:= NewConectoStore(c.conectoConfig.StoreConfig, connections).Build()
+	stores:= NewConectoStore(c.conectoConfig.DBConfig, connections).Build()
 	stateStore := stores.stateStore
 	credentialService:=  NewCredentialService(stores.credentialStore).Build()
 	pipelineRegitry := pipelines.NewRegistry()

@@ -10,14 +10,14 @@ import (
 
 
 type MemoryStateStore struct{
-	Store map[string]statestores.State
+	Store map[string]any
 	mu    sync.RWMutex
 }
 
 func (s *MemoryStateStore) Load(context context.Context, ID string) (statestores.State, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	cursor, exist := s.Store[ID]
+	cursor, exist := s.Store[ID].(statestores.State)
 	if(!exist){
 		return statestores.State{}, nil
 	}

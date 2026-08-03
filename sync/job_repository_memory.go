@@ -10,12 +10,12 @@ var ErrJobNotFound = errors.New("job not found")
 
 type MemoryJobRepository struct {
 
-	jobs map[string]*SyncJob
+	jobs map[string]any
 }
 
-func NewMemoryJobRepository() *MemoryJobRepository {
+func NewMemoryJobRepository(store map[string]any) *MemoryJobRepository {
 	return &MemoryJobRepository{
-		jobs: make(map[string]*SyncJob),
+		jobs: store,
 	}
 }
 
@@ -35,7 +35,7 @@ func (r *MemoryJobRepository) MarkRunning(
 ) error {
 
 	
-	job, ok := r.jobs[jobID]
+	job, ok := r.jobs[jobID].(SyncJob)
 
 	if !ok {
 		return ErrJobNotFound
@@ -54,7 +54,7 @@ func (r *MemoryJobRepository) MarkCompleted(
 ) error {
 
 
-	job, ok := r.jobs[jobID]
+	job, ok := r.jobs[jobID].(SyncJob)
 
 	if !ok {
 		return ErrJobNotFound
@@ -77,7 +77,7 @@ func (r *MemoryJobRepository) ScheduleRetry(
 ) error {
 
 
-	job, ok := r.jobs[jobID]
+	job, ok := r.jobs[jobID].(SyncJob)
 
 	if !ok {
 		return ErrJobNotFound
@@ -103,7 +103,7 @@ func (r *MemoryJobRepository) MarkFailed(
 ) error {
 
 
-	job, ok := r.jobs[jobID]
+	job, ok := r.jobs[jobID].(SyncJob)
 
 	if !ok {
 		return ErrJobNotFound

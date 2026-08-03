@@ -6,7 +6,7 @@
             "app_url" : "https://0bd2-2a0a-ef40-866-6b01-1ddb-c2b2-864f-ba0a.ngrok-free.app",
             "client_id": "06df04d35be21f9bfc0987849a2f4f66",
             "client_secret": "SHOPIFY_SECRET",
-            "scopes": ["read_orders", "read_all_orders"]
+            "scopes": ["read_orders"]
         }        
     },
     "connector" : {

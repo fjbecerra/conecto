@@ -9,20 +9,20 @@ import (
 var ErrConnectionNotFound = errors.New("connection not found")
 
 type MemoryStore struct {
-	store map[string]Connection
+	store map[string]any
 }
 
 
-func NewMemoryStore() *MemoryStore {
+func NewMemoryStore(store map[string]any) *MemoryStore {
 
 	return &MemoryStore{
-		store: make(map[string]Connection),
+		store: store,
 	}
 }
 
 func (s *MemoryStore) Get(ctx context.Context,id string) (Connection,error){
 
-	connection, ok := s.store[id]
+	connection, ok := s.store[id].(Connection)
 
 	if !ok {
 		return Connection{}, ErrConnectionNotFound
@@ -38,7 +38,7 @@ func (s *MemoryStore) Save(ctx context.Context,connection Connection) error {
 
 func (s *MemoryStore) UpdateStatus(ctx context.Context,id string,status string) error {
 
-	connection, ok := s.store[id]
+	connection, ok := s.store[id].(Connection)
 	if !ok {
 		return ErrConnectionNotFound
 	}
@@ -56,23 +56,25 @@ func (s *MemoryStore) ClaimDueConnections(ctx context.Context) ([]Connection, er
 
 	for _, conn := range s.store {
 
-		if conn.Status != "connected" {
+		connection, _ := conn.(Connection)
+
+		if connection.Status != "connected" {
 			continue
 		}
 
 
-		if conn.SyncStatus != "idle" {
+		if connection.SyncStatus != "idle" {
 			continue
 		}
 
 
-		if conn.NextSyncAt.After(now) {
+		if connection.NextSyncAt.After(now) {
 			continue
 		}
 
-		conn.SyncStatus = "queued"
+		connection.SyncStatus = "queued"
 
-		result = append(result,conn)
+		result = append(result,connection)
 	}
 
 
@@ -80,7 +82,7 @@ func (s *MemoryStore) ClaimDueConnections(ctx context.Context) ([]Connection, er
 }
 
 func (s *MemoryStore) MarkRunning(ctx context.Context, id string) error {
-	conn, ok := s.store[id]
+	conn, ok := s.store[id].(Connection)
 	if !ok {
 		return ErrConnectionNotFound
 	}
@@ -89,7 +91,7 @@ func (s *MemoryStore) MarkRunning(ctx context.Context, id string) error {
 }
 
 func (s *MemoryStore) MarkCompleted(ctx context.Context, id string, next time.Time) error {
-	conn, ok := s.store[id]
+	conn, ok := s.store[id].(Connection)
 
 	if !ok {
 		return ErrConnectionNotFound

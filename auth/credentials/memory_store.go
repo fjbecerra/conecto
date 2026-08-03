@@ -10,9 +10,9 @@ type MemoryCredentialStore struct {
 	store map[string]any
 }
 
-func NewMemoryCredentialStore() *MemoryCredentialStore {
+func NewMemoryCredentialStore(store map[string]any) *MemoryCredentialStore {
 	return &MemoryCredentialStore{
-		store: make(map[string]any),
+		store: store,
 	}
 }
 

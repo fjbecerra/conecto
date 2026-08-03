@@ -12,7 +12,6 @@ import (
 
 type conectoStore struct{
 	connections Connections
-	storeType StoreType
 	storeSourceName string
 
 }
@@ -24,37 +23,39 @@ type Stores struct {
 	jobRepository sync.JobRepository
 }
 
-func NewConectoStore(storeConfig StoreConfig, connections Connections) *conectoStore {
+func NewConectoStore(storeConfig DBConfig, connections Connections) *conectoStore {
 	return &conectoStore {		
 		connections: connections,
-		storeType: storeConfig.StoreType,
 		storeSourceName: storeConfig.Source,
 	}
 }
 
 
 func (c *conectoStore) Build() Stores {
-	switch c.storeType {
-		case MemoryStore:
+	connection:= c.connections[c.storeSourceName].OpenConnection
+	connectionType:= c.connections[c.storeSourceName].Type
+	switch connectionType {
+		case MemorySource:
+			memory := connection.NewMemory()
 			return Stores{
-				credentialStore: credentials.NewMemoryCredentialStore(),
+				credentialStore: credentials.NewMemoryCredentialStore(memory),
 				stateStore: &states.MemoryStateStore{
-					Store :  map[string]statestores.State{},				
+					Store :  memory,				
 				},
-				connectionStore: connections.NewMemoryStore(),
-				jobRepository: sync.NewMemoryJobRepository(),
+				connectionStore: connections.NewMemoryStore(memory),
+				jobRepository: sync.NewMemoryJobRepository(memory),
 			}
 			
-		case PostgresStore:
-			connection:= c.connections[c.storeSourceName].OpenDB()	
-			credentialStore:= credentials.NewPostgresCredentialStore(connection)
-			createCredentialTable("credentials_store", connection)
-			stateStore:= states.NewStateStore(connection)
-			createStateTable("streams_state", connection)
-			connectionStore := connections.NewPostgresStore(connection)
-			createConnectionsTable("connections", connection)
-			jobRepository:= sync.NewPostgresJobRepository(connection)
-			createJobRepositoryTable("sync_jobs", connection)
+		case PostgresSource:
+			db := connection.OpenDB()
+			credentialStore:= credentials.NewPostgresCredentialStore(db)
+			createCredentialTable("credentials_store", db)
+			stateStore:= states.NewStateStore(db)
+			createStateTable("streams_state", db)
+			connectionStore := connections.NewPostgresStore(db)
+			createConnectionsTable("connections", db)
+			jobRepository:= sync.NewPostgresJobRepository(db)
+			createJobRepositoryTable("sync_jobs", db)
 			return Stores{
 				credentialStore: credentialStore,
 				stateStore: stateStore,

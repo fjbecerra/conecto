@@ -92,8 +92,7 @@ type PaginationConfig struct {
 
 
 
-type StoreConfig struct {
-	StoreType StoreType `json:"type"`
+type DBConfig struct {
 	Source string `json:"source"`
 }
 
@@ -178,7 +177,7 @@ type ConectoConfig struct {
 	SourcesConfig SourcesConfig `json:"sources"`
 	SyncConfig SyncConfig `json:"sync"`
 	PipelineRegistryConfig []string `json:"pipeline_registry"`
-	StoreConfig StoreConfig `json:"stores"`
+	DBConfig DBConfig `json:"db"`
 	HttpServerConfig HttpServerConfig `json:"http_server"`
 } 
 
@@ -227,15 +226,10 @@ const (
 	MemorySink SinkType = "memory"
 )
 
-type StoreType string
-const(
-	MemoryStore StoreType = "memory"
-	PostgresStore StoreType = "postgres"
-)
-
 type SourcesType string
 const(
 	PostgresSource 	SourcesType = "postgres"
+	MemorySource 	SourcesType = "memory"
 )
 
 type AuthenticationType string
