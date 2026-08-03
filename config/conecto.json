@@ -34,6 +34,12 @@
             },
             "memory": {
                 "type": "memory"
+            },
+            "http_client": {
+                "type": "http",
+                "timeout_ms": 5000,
+                "max_idle_connections": 10,
+                "max_idle_connections_per_host": 10
             }
         },
 

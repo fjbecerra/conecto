@@ -47,7 +47,3 @@ func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cu
 		Cursor: next,
 	}, nil
 }
-
-func (c *HttpConnector) Close() error {
-	return c.Provider.Close()
-}

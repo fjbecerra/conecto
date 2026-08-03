@@ -7,6 +7,5 @@ import (
 )
 
 type Connector interface {
-	Close() error 
 	FetchBatch(context context.Context, state statestores.Cursor, connection connections.Connection) (Batch, error)
 }

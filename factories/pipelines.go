@@ -40,6 +40,7 @@ func (p *Pipeline) Build() pipelines.Pipeline{
 			streamConfig, 
 			p.random, 
 			p.credentialService,
+			p.connections,
 		).Build()
 		transform := NewTransform(
 			streamConfig.TransformersConfig, 

@@ -54,9 +54,9 @@ func main() {
 	slog.Info("application starting")
 
 
-	go runner.Worker.Run(ctx)
+	go runner.RunWorker(ctx)
 
-	go runner.Scheduler.Run(ctx)
+	go runner.RunScheduler(ctx)
 
 
 	server := &http.Server{
@@ -64,7 +64,7 @@ func main() {
 			":%s",
 			strconv.Itoa(appConfig.ConectoConfig.HttpServerConfig.Port),
 		),
-		Handler: runner.Router,
+		Handler: runner.RunRouter(),
 	}
 
 
@@ -90,7 +90,22 @@ func main() {
 	)
 	defer cancelShutdown()
 
+	// 1. Stop accepting new HTTP requests and wait for existing ones
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		slog.Error(
+			"server shutdown failed",
+			"error",
+			err,
+		)
+	}
 
-	server.Shutdown(shutdownCtx)
+	// 2. Close database connections and other resources
+	if err := runner.Closed(); err != nil {
+		slog.Error(
+			"resource cleanup failed",
+			"error",
+			err,
+		)
+	}
 }
 

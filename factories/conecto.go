@@ -8,19 +8,48 @@ import (
 	"conecto/core/pipelines"
 	"conecto/core/retry"
 	"conecto/sync"
+	"context"
 	"net/http"
 	"os"
 	"time"
+
 	"github.com/go-chi/chi/v5"
-
-
 )
 
-type Runner struct {
-	Scheduler *sync.Scheduler
-	Worker *sync.Worker
-	Router *chi.Mux
+type IRunner interface {
+	Closed() error
+	RunScheduler(ctx context.Context)
+	RunWorker(ctx context.Context) 
+	RunRouter() *chi.Mux
 }
+
+type Runner struct {
+	scheduler *sync.Scheduler
+	worker *sync.Worker
+	router *chi.Mux
+	connections Connections
+}
+
+func (c *Runner) Closed() error{
+	err := c.connections.CloseAll()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Runner) RunScheduler(ctx context.Context){
+	 c.scheduler.Run(ctx)
+}
+
+func (c *Runner) RunWorker(ctx context.Context){
+	 c.worker.Run(ctx)
+}
+
+func (c *Runner) RunRouter() *chi.Mux{
+	return c.router
+}
+
 
 type Conecto struct{
 	
@@ -33,7 +62,7 @@ func NewConecto(conectoConfig ConectoConfig) *Conecto{
 	}
 }
 
-func (c *Conecto) Build() Runner{
+func (c *Conecto) Build() IRunner{
 	random:= &RandomImpl{}
 	connections:= NewSource(c.conectoConfig.SourcesConfig).Build()
 	stores:= NewConectoStore(c.conectoConfig.DBConfig, connections).Build()
@@ -109,9 +138,10 @@ func (c *Conecto) Build() Runner{
 	handler := oauth.NewHandler(oauthService)
 	router :=oauth.NewRouter(handler)
 
-	return Runner{
-		Scheduler: &scheduler,
-		Worker: worker,
-		Router: router,
+	return &Runner{
+		scheduler: &scheduler,
+		worker: worker,
+		router: router,
+		connections: connections,
 	}
 }

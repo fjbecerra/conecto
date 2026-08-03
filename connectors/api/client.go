@@ -36,10 +36,3 @@ func (c *Client) Fetch(context context.Context, req *http.Request, connection co
 	return c.Client.Fetch(req)
 }
 
-func (c *Client) Close() error {
-	//err := c.CredentialService.Close()
-	// if err != nil {
-	// 	return err
-	// }
-	return c.Client.Close()
-}

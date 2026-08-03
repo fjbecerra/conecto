@@ -13,6 +13,7 @@
         "type" : "api",
         "api" : {
             "type" : "graphql",
+            "source" : "http_client",
             "endpoint" : {
                 "type" : "dinamic",
                 "base" : "https://%s.myshopify.com/admin/api/2026-07/graphql.json",

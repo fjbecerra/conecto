@@ -7,7 +7,6 @@ import (
 
 type IClient interface {
 	Fetch(req *http.Request) (*HttpResponse, error)
-	Close() error
 }
 
 type HttpClient struct {
@@ -32,12 +31,4 @@ func (c *HttpClient) Fetch(req *http.Request) (*HttpResponse, error) {
 		Headers: resp.Header,
 		Status:  resp.StatusCode,
 	}, nil
-}
-
-func (c *HttpClient) Close() error {
-	if c.Client != nil {
-		c.Client.CloseIdleConnections()
-	}
-
-	return nil
 }

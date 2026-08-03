@@ -7,7 +7,6 @@ import (
 	"conecto/connectors/api/rest"
 	"conecto/core/engines"
 	"conecto/core/retry"
-	"net/http"
 	"os"
 	"time"
 )
@@ -18,6 +17,7 @@ type Connector struct {
 	random       retry.Random
 	credentialService credentials.CredentialService
 	connectorType ConnectorType
+	connections Connections
 
 }
 
@@ -26,12 +26,14 @@ func NewConnector(
 	streamConfig StreamConfig, 
 	random retry.Random, 
 	credentialService credentials.CredentialService,
+	connections Connections,
 	) *Connector {
 		return &Connector{
 			config:       config,
 			streamConfig: streamConfig,
 			random:       random,
 			credentialService: credentialService,
+			connections: connections,
 		}
 }
 
@@ -106,7 +108,7 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 		}
 	} else {
 		httpClient = &api.HttpClient{
-			Client: http.DefaultClient,
+			Client: c.connections.connections[c.config.ApiConfig.Source].OpenConnection.httpClient,
 		}
 	}
 

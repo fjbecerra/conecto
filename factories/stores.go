@@ -32,11 +32,11 @@ func NewConectoStore(storeConfig DBConfig, connections Connections) *conectoStor
 
 
 func (c *conectoStore) Build() Stores {
-	connection:= c.connections[c.storeSourceName].OpenConnection
-	connectionType:= c.connections[c.storeSourceName].Type
+	connection:= c.connections.connections[c.storeSourceName].OpenConnection
+	connectionType:= c.connections.connections[c.storeSourceName].Type
 	switch connectionType {
 		case MemorySource:
-			memory := connection.NewMemory()
+			memory := connection.NewMemory
 			return Stores{
 				credentialStore: credentials.NewMemoryCredentialStore(memory),
 				stateStore: &states.MemoryStateStore{
@@ -47,7 +47,7 @@ func (c *conectoStore) Build() Stores {
 			}
 			
 		case PostgresSource:
-			db := connection.OpenDB()
+			db := connection.DB
 			credentialStore:= credentials.NewPostgresCredentialStore(db)
 			createCredentialTable("credentials_store", db)
 			stateStore:= states.NewStateStore(db)

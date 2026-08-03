@@ -4,6 +4,8 @@ import (
 	"conecto/auth/connections"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 )
 
 type PaginationProvider struct {
@@ -25,6 +27,11 @@ func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCurs
 		return Page[json.RawMessage]{}, err
 	}
 
+	if resp.Status < 200 || resp.Status >= 300 {
+		return Page[json.RawMessage]{}, 
+		 errors.New(fmt.Sprintf("%s",resp.Body))
+	}
+
 	rows, err := p.Data.Extract(resp.Body)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
@@ -39,6 +46,3 @@ func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCurs
 	}, nil
 }
 
-func (p *PaginationProvider) Close() error {
-	return p.Client.Close()
-}

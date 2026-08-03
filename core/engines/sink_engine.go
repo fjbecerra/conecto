@@ -6,13 +6,11 @@ import (
 	"conecto/core/retry"
 	"conecto/core/statestores"
 	"context"
-	"errors"
 )
 
 
 type SinkCommiter interface{
 	Commit(ctx context.Context, ID string, batch core.Batch) error
- 	Shutdown(ctx context.Context) error
 }
 
 type SinkEngine struct {
@@ -90,21 +88,4 @@ func (a *SinkEngine) Commit(context context.Context, ID string, batch core.Batch
     }
 
     return nil
-}
-
-func (e *SinkEngine) Shutdown(
-    ctx context.Context,
-) error {
-
-    var errs []error
-
-    // if err := e.StateStore.Close(); err != nil {
-    //     errs = append(errs, err)
-    // }
-
-    if err := e.Executor.Close(); err != nil {
-        errs = append(errs, err)
-    }
-
-    return errors.Join(errs...)
 }

@@ -52,7 +52,7 @@ func (s * Sink) Build() engines.SinkCommiter {
 	switch s.Config.Type {
 		case PostgresSink:
 			sink = buildPostgres(s.destinationConfig, s.FieldsSpecsConfigs)	
-			connection:= s.connections[s.Config.Source].OpenConnection.OpenDB()	
+			connection:= s.connections.connections[s.Config.Source].OpenConnection.DB
 			if s.Config.SchemaConfig.AutoCreate{
 				createPostgresTable(s.destinationConfig.Name, s.FieldsSpecsConfigs[*s.destinationConfig.Schema],connection)
 			}

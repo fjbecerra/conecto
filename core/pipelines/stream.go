@@ -24,8 +24,6 @@ type Stream struct {
 
 func (p *Stream) Run(context context.Context,connection connections.Connection) error {
 	
-	defer p.Shutdown(context)
-
 	// CONTEXT (shared cancellation)
 	g, ctxWithCancel := errgroup.WithContext(context)
 
@@ -104,19 +102,4 @@ func (p *Stream) Run(context context.Context,connection connections.Connection) 
 			return err
 		}
 
-}
-
-func (p *Stream) Shutdown(ctx context.Context) error {
-
-    var errs []error
-
-    if err := p.Engine.ConnectorRunnable.Shutdown(ctx); err != nil {
-        errs = append(errs, err)
-    }
-
-    if err := p.Engine.SinkCommiter.Shutdown(ctx); err != nil {
-        errs = append(errs, err)
-    }
-
-    return errors.Join(errs...)
 }

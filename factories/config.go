@@ -38,6 +38,7 @@ type ApiConfig struct {
 	EndpointConfig EndpointConfig `json:"endpoint"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	GraphqlConfig *GraphqlConfig `json:"graphql,omitempty"`
+	Source string `json:"source"`
 }
 
 type ConnectorConfig struct{
@@ -230,6 +231,7 @@ type SourcesType string
 const(
 	PostgresSource 	SourcesType = "postgres"
 	MemorySource 	SourcesType = "memory"
+	HttpSource SourcesType = "http"
 )
 
 type AuthenticationType string

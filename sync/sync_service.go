@@ -141,6 +141,7 @@ func (e *SyncService) execute(ctx context.Context, job SyncJob) error {
 	}
 
 	for _, stream := range pipeline.Streams {
+		
 
 		err := stream.Run(ctx,conn)
 

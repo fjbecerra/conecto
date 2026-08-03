@@ -10,7 +10,6 @@ import (
 
 type ConnectorRunnable interface {
 	Run(context context.Context, state statestores.State, out chan<- core.Batch, connection connections.Connection) error
-	Shutdown(ctx context.Context) error
 }
 
 type ConnectorEngine struct {
@@ -27,7 +26,6 @@ func (e *ConnectorEngine) Run(
 
 	current := state.Cursor
 
-	defer e.Connector.Close()
 	var batch core.Batch
 
 	for {
@@ -61,8 +59,4 @@ func (e *ConnectorEngine) Run(
 
 		current = batch.Cursor
 	}
-}
-
-func (c *ConnectorEngine) Shutdown(ctx context.Context) error {
-	return c.Connector.Close()
 }

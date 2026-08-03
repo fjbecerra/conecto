@@ -3,6 +3,7 @@ package factories
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 )
 
 
@@ -13,8 +14,9 @@ type Source struct{
 
 type OpenConnection struct {
 
-	OpenDB func ()*sql.DB
-	NewMemory func() map[string]any
+	DB *sql.DB
+	NewMemory  map[string]any
+	httpClient *http.Client
 }
 
 
@@ -23,10 +25,25 @@ type Connection struct {
 	Type SourcesType
 }
 
+type Connections struct{
+	connections map[string]Connection
+} 
 
-
-type Connections map[string]Connection
-
+func (c *Connections) CloseAll() error {
+	for _, connection := range c.connections {
+		switch connection.Type {
+		case PostgresSource:
+			db := connection.OpenConnection.DB
+			err := db.Close()
+			if err != nil {
+				return fmt.Errorf("failed to close Postgres connection: %w", err)
+			}
+		default:
+			return fmt.Errorf("unknown source type: %s", connection.Type)
+		}
+	}
+	return nil
+}
 
 func NewSource(SourcesConfig SourcesConfig) *Source {
 	return &Source{
@@ -35,28 +52,28 @@ func NewSource(SourcesConfig SourcesConfig) *Source {
 }
 
 func (d *Source) Build() Connections {
-	connections:= make(Connections)
+	connections:= make(map[string]Connection)
 	for k, v := range d.SourcesConfig {
 		openConnection := OpenConnection{}
 		switch v.Type {
 			case PostgresSource:
-				openDb := func() *sql.DB{
-					db, err := sql.Open("pgx", v.DSN)
-					if err != nil {
-						panic(fmt.Sprintf("cannot open connection, %s", err.Error()))
-					}
-					return db
-				}
+				db, err := sql.Open("pgx", v.DSN)
+				if err != nil {
+					panic(fmt.Sprintf("cannot open connection, %s", err.Error()))
+				}					
 				openConnection = OpenConnection{
-					OpenDB: openDb,
+					DB: db,
 				}	
 		
 			case MemorySource:
-				memory := func() map[string]any{
-					return make(map[string]any)
-				}
+				memory := make(map[string]any)
 				openConnection = OpenConnection{
 					NewMemory: memory,
+				}
+			case HttpSource:
+				httpClient := &http.Client{}
+				openConnection = OpenConnection{
+					httpClient: httpClient,
 				}		
 			default: 
 				panic(fmt.Sprintf("Unknown source type: %s", v.Type))
@@ -68,5 +85,7 @@ func (d *Source) Build() Connections {
 		}
 		
 	}
-	return connections	
+	return Connections{
+		connections: connections,
+	}	
 }
