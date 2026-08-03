@@ -8,7 +8,6 @@ import (
 type Registry interface {
 	Register(p Pipeline) error
 	Get(id string) (Pipeline, error)
-	GetAll() []Pipeline
 }
 
 type registry struct {
@@ -58,13 +57,4 @@ func (r *registry) Get(id string) (Pipeline, error) {
 		)
 	}
 	return p, nil
-}
-
-func (r *registry) GetAll() []Pipeline {
-	var pipelines []Pipeline
-	
-	for _,pipeline := range r.pipelines{
-		pipelines = append(pipelines, pipeline)
-	} 
-	return pipelines
 }

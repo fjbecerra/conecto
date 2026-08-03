@@ -19,8 +19,16 @@ func NewWorker(buffer Buffer, syncServic *SyncService) *Worker {
 }
 
 func (w *Worker) Run(ctx context.Context) {
+	jobs := w.buffer.Consume()
 	slog.Info("worker started")
-	for job := range w.buffer.Consume() {
-		w.syncService.ExecuteJob(ctx, job)		
+
+	for {
+		select {
+			case <-ctx.Done():
+				return
+
+			case job := <-jobs:
+				w.syncService.ExecuteJob(ctx, job)
+		}
 	}
 }

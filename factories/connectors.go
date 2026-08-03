@@ -42,13 +42,23 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 	var builder api.RequestBuilder
 	var dataExtractor api.DataExtractor
 	var cursorExtractor api.CursorExtractor
+	var endpointProvider api.EndPointProvider
+
+	switch c.config.ApiConfig.EndpointConfig.EndpointType{
+		case DinamicEndpointType:
+			endpointProvider = api.NewDinamicEndpointProvider(c.config.ApiConfig.EndpointConfig.Base, c.config.ApiConfig.EndpointConfig.MetadataKey)
+		case StaticEndpointType:
+			endpointProvider = api.NewStaticEndpointProvider(c.config.ApiConfig.EndpointConfig.Base)
+		default:
+			panic("not endpoint type found")
+	}
 
 	switch c.config.Type{
 		case Api: switch c.config.ApiConfig.Type {
 			case Rest:
 				provider = buildProvider(c.config.ApiConfig.RestConfig.AuthenticationConfig)
 				builder = &rest.RestRequestBuilder{
-					BaseURL:     c.config.ApiConfig.RestConfig.BaseUrl,
+					EndPointProvider: endpointProvider,
 					CursorParam: c.config.ApiConfig.RestConfig.PaginationConfig.Response.Next.Path,
 					Method:      "GET",
 					Headers: map[string]string{
@@ -67,8 +77,8 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 			case Graphql:
 				provider = buildProvider(c.config.ApiConfig.GraphqlConfig.AuthenticationConfig)
 				builder = &graphql.GraphQLRequestBuilder{
-					Endpoint: c.config.ApiConfig.GraphqlConfig.BaseUrl,
-					Query:    c.config.ApiConfig.GraphqlConfig.Query,
+					EndPointProvider:  endpointProvider,
+					Query:    c.streamConfig.Query,
 				}
 
 				dataExtractor = &graphql.GraphQLDataExtractor{

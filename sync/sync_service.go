@@ -3,9 +3,10 @@ package sync
 
 import (
 	"conecto/auth/connections"
-	"conecto/core/retry"
 	"conecto/core/pipelines"
+	"conecto/core/retry"
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,24 +17,20 @@ type SyncService struct {
 	registry         pipelines.Registry
 	connectionStore  connections.Store
 	jobRepository    JobRepository
-	executor         *Executor
 	retry 			retry.Executor
 }
 
-func NewSyncService(buffer Buffer, registry pipelines.Registry, connectionStore connections.Store, jobRepository JobRepository,executor *Executor,retry retry.Executor) *SyncService{
+func NewSyncService(buffer Buffer, registry pipelines.Registry, connectionStore connections.Store, jobRepository JobRepository,retry retry.Executor) *SyncService{
 	return &SyncService{
 		buffer: buffer,
 		registry: registry,
 		connectionStore: connectionStore,
 		jobRepository: jobRepository,
-		executor: executor,
 		retry: retry,
 	}
 }
 
-func (s *SyncService) ScheduleDueSyncs(
-	ctx context.Context,
-) error {
+func (s *SyncService) ScheduleDueSyncs(ctx context.Context,) error {
 
 	connections, err := s.connectionStore.ClaimDueConnections(ctx)
 
@@ -43,32 +40,14 @@ func (s *SyncService) ScheduleDueSyncs(
 
 	for _, conn := range connections {
 
-		_, err := s.registry.Get(
-			conn.Provider,
-		)
+		pipeline, err := s.registry.Get(conn.Provider)
 
 		if err != nil {
+			slog.Error("Pipeline due to sync not register", "pipeline", pipeline.ID)
 			continue
 		}
 
-		job := SyncJob{
-			ID: uuid.NewString(),
-
-			ConnectionID: conn.ID,
-
-			PipelineID: conn.Provider,
-
-			Status: JobPending,
-
-			Attempt: 0,
-
-			MaxRetries: 3,
-		}
-
-		err = s.jobRepository.Create(
-			ctx,
-			job,
-		)
+		job, err := s.createJob(ctx, conn)
 
 		if err != nil {
 			continue
@@ -80,38 +59,36 @@ func (s *SyncService) ScheduleDueSyncs(
 	return nil
 }
 
-func (s *SyncService) ScheduleConnectionSync(
-	ctx context.Context,
-	conn connections.Connection,
-) error {
 
-	job := SyncJob{
-		ID: uuid.NewString(),
+//this should be a backfill of last 90 days
+func (s *SyncService) ScheduleConnectionSync(ctx context.Context, conn connections.Connection) error {
 
-		ConnectionID: conn.ID,
+	job, err := s.createJob(ctx, conn)
 
-		PipelineID: conn.Provider,
-
-		Status: JobPending,
-
-		Attempt: 0,
-
-		MaxRetries: 3,
-	}
-
-
-	if err := s.jobRepository.Create(
-		ctx,
-		job,
-	); err != nil {
+	if err != nil {
 		return err
 	}
-
 
 	s.buffer.Publish(job)
 
 	return nil
 }
+
+func (s *SyncService) createJob(ctx context.Context, conn connections.Connection,
+) (SyncJob, error) {
+
+	job := SyncJob{
+		ID: uuid.NewString(),
+		ConnectionID: conn.ID,
+		PipelineID: conn.Provider,
+		Status: JobPending,
+		Attempt: 0,
+		MaxRetries: 3,
+	}
+
+	return job,s.jobRepository.Create(ctx,job)
+}
+
 
 func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
 	
@@ -122,7 +99,7 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
 				return err
 			}
 
-			err = s.executor.Execute(ctx, job)
+			err = s.execute(ctx, job)
 
 			if err == nil {
 
@@ -133,7 +110,7 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
 				return s.connectionStore.MarkCompleted(
 					ctx,
 					job.ConnectionID,
-					time.Now().Add(24*time.Hour),
+					time.Now().Add(24*time.Hour),//todo. put this in the config
 				)
 			}
     		return err
@@ -147,4 +124,31 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
 
 	return err
 
+}
+
+func (e *SyncService) execute(ctx context.Context, job SyncJob) error {
+
+	conn, err := e.connectionStore.Get(ctx,job.ConnectionID)
+
+	if err != nil {
+		return err
+	}
+
+	pipeline, err := e.registry.Get(job.PipelineID)
+
+	if err != nil {
+		return err
+	}
+
+	for _, stream := range pipeline.Streams {
+
+		err := stream.Run(ctx,conn)
+
+		if err != nil {
+			//cannot leave
+			return err
+		}
+	}
+
+	return nil
 }

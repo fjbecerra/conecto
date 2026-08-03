@@ -37,9 +37,9 @@ func (c *Client) Fetch(context context.Context, req *http.Request, connection co
 }
 
 func (c *Client) Close() error {
-	err := c.CredentialService.Close()
-	if err != nil {
-		return err
-	}
+	//err := c.CredentialService.Close()
+	// if err != nil {
+	// 	return err
+	// }
 	return c.Client.Close()
 }

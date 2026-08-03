@@ -26,7 +26,6 @@ func (s *PostgresStore) Get(ctx context.Context,id string) (Connection,error){
 		id,
 		tenant_id,
 		provider,
-		external_id,
 		metadata,
 		status
 
@@ -51,7 +50,6 @@ func (s *PostgresStore) Get(ctx context.Context,id string) (Connection,error){
 			&c.ID,
 			&c.TenantID,
 			&c.Provider,
-			&c.ExternalID,
 			&metadata,
 			&c.Status,
 		)
@@ -264,11 +262,7 @@ func (s *PostgresStore) MarkRunning(
 	return err
 }
 
-func (s *PostgresStore) MarkCompleted(
-	ctx context.Context,
-	id string,
-	next time.Time,
-) error {
+func (s *PostgresStore) MarkCompleted(ctx context.Context, id string, next time.Time) error {
 
 
 	_, err := s.db.ExecContext(

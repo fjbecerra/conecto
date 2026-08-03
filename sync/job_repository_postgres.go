@@ -16,10 +16,7 @@ func NewPostgresJobRepository(db *sql.DB) *PostgresJobRepository {
 	}
 }
 
-func (r *PostgresJobRepository) Create(
-	ctx context.Context,
-	job SyncJob,
-) error {
+func (r *PostgresJobRepository) Create(ctx context.Context, job SyncJob) error {
 
 	_, err := r.db.ExecContext(
 		ctx,
@@ -60,10 +57,7 @@ func (r *PostgresJobRepository) Create(
 	return err
 }
 
-func (r *PostgresJobRepository) MarkRunning(
-	ctx context.Context,
-	jobID string,
-) error {
+func (r *PostgresJobRepository) MarkRunning(ctx context.Context,jobID string) error {
 
 	_, err := r.db.ExecContext(
 		ctx,
@@ -82,10 +76,7 @@ func (r *PostgresJobRepository) MarkRunning(
 	return err
 }
 
-func (r *PostgresJobRepository) MarkCompleted(
-	ctx context.Context,
-	jobID string,
-) error {
+func (r *PostgresJobRepository) MarkCompleted(ctx context.Context,jobID string) error {
 
 	_, err := r.db.ExecContext(
 		ctx,
@@ -134,11 +125,7 @@ func (r *PostgresJobRepository) ScheduleRetry(
 	return dbErr
 }
 
-func (r *PostgresJobRepository) MarkFailed(
-	ctx context.Context,
-	jobID string,
-	err error,
-) error {
+func (r *PostgresJobRepository) MarkFailed(ctx context.Context, jobID string, err error) error {
 
 
 	_, dbErr := r.db.ExecContext(

@@ -48,7 +48,7 @@ func (c *conectoStore) Build() Stores {
 		case PostgresStore:
 			connection:= c.connections[c.storeSourceName].OpenDB()	
 			credentialStore:= credentials.NewPostgresCredentialStore(connection)
-			createCredentialTable("crendentials_store", connection)
+			createCredentialTable("credentials_store", connection)
 			stateStore:= states.NewStateStore(connection)
 			createStateTable("streams_state", connection)
 			connectionStore := connections.NewPostgresStore(connection)
@@ -109,13 +109,16 @@ func createStateTable(tableName string, db *sql.DB) {
 
 func createConnectionsTable(tableName string, db *sql.DB) {
 	query := `
-	CREATE TABLE %s (
+	CREATE TABLE IF NOT EXISTS %s (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL,
     provider TEXT NOT NULL,
     external_id TEXT,
     metadata JSONB,
     status TEXT NOT NULL,
+	sync_status TEXT NOT NULL,
+	last_sync_at TIMESTAMP,
+	next_sync_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -130,7 +133,7 @@ func createConnectionsTable(tableName string, db *sql.DB) {
 
 func createJobRepositoryTable(tableName string, db *sql.DB) {
 	query := `
-	CREATE TABLE %s (
+	CREATE TABLE IF NOT EXISTS %s (
     id UUID PRIMARY KEY,
     connection_id UUID NOT NULL,
     pipeline_id TEXT NOT NULL,

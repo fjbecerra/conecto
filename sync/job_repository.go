@@ -7,22 +7,11 @@ import (
 
 type JobRepository interface {
 
-	Create(
-		ctx context.Context,
-		job SyncJob,
-	) error
+	Create(ctx context.Context,job SyncJob) error
 
+	MarkRunning(ctx context.Context,jobID string) error
 
-	MarkRunning(
-		ctx context.Context,
-		jobID string,
-	) error
-
-
-	MarkCompleted(
-		ctx context.Context,
-		jobID string,
-	) error
+	MarkCompleted(ctx context.Context,jobID string) error
 
 
 	ScheduleRetry(
@@ -33,9 +22,5 @@ type JobRepository interface {
 	) error
 
 
-	MarkFailed(
-		ctx context.Context,
-		jobID string,
-		err error,
-	) error
+	MarkFailed(ctx context.Context, jobID string, err error) error
 }

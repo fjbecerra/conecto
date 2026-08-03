@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"conecto/auth/connections"
 	"conecto/connectors/api"
 	"context"
 	"net/http"
@@ -8,15 +9,15 @@ import (
 )
 
 type RestRequestBuilder struct {
-	BaseURL     string
+	EndPointProvider     api.EndPointProvider
 	Method      string
 	CursorParam string
 	Headers     map[string]string
 }
 
-func (b *RestRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor) (*http.Request, error) {
+func (b *RestRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor, connection connections.Connection) (*http.Request, error) {
 
-	u, err := url.Parse(b.BaseURL)
+	u, err := url.Parse(b.EndPointProvider.Apply(ctx, connection))
 	if err != nil {
 		return nil, err
 	}

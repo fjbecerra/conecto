@@ -20,8 +20,8 @@ func NewPostgresCredentialStore(db *sql.DB) *PostgresCredentialStore {
 func (p *PostgresCredentialStore) Save(context context.Context, connection connections.Connection, record EncryptedCredential) error {
 
 	query := `
-	INSERT INTO oauth_tokens (
-		pipeline_id,
+	INSERT INTO credentials_store (
+		connection_id,
 		ciphertext,
 		nonce,
 		key_version,
@@ -29,7 +29,7 @@ func (p *PostgresCredentialStore) Save(context context.Context, connection conne
 	)
 	VALUES ($1, $2, $3, $4, $5)
 
-	ON CONFLICT (pipeline_id)
+	ON CONFLICT (connection_id)
 
 	DO UPDATE SET
 		ciphertext  = EXCLUDED.ciphertext,
@@ -60,8 +60,8 @@ func (p *PostgresCredentialStore) Get(context context.Context, connection connec
 		nonce,
 		key_version,
 		expires_at
-	FROM oauth_tokens
-	WHERE pipeline_id = $1
+	FROM credentials_store
+	WHERE connection_id = $1
 	`
 
 	var record EncryptedCredential

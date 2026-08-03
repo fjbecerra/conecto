@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"bytes"
+	"conecto/auth/connections"
 	"conecto/connectors/api"
 	"context"
 	"encoding/json"
@@ -9,9 +10,8 @@ import (
 )
 
 type GraphQLRequestBuilder struct {
-	Endpoint string
+	EndPointProvider  api.EndPointProvider
 	Query    string
-
 	VariableCursorKey string
 	Headers           map[string]string
 }
@@ -21,7 +21,7 @@ type graphQLBody struct {
 	Variables map[string]any `json:"variables,omitempty"`
 }
 
-func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor) (*http.Request, error) {
+func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor, connection connections.Connection) (*http.Request, error) {
 
 	vars := map[string]any{}
 
@@ -42,7 +42,7 @@ func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCurso
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		b.Endpoint,
+		b.EndPointProvider.Apply(ctx, connection),
 		bytes.NewBuffer(bodyBytes),
 	)
 	if err != nil {

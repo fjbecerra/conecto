@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -24,6 +26,11 @@ func main() {
 		),
 	)
 	slog.SetDefault(logger)
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
 
 	appConfig, err := factories.LoadConfig[factories.AppConfig](
 		"./config/conecto.json",

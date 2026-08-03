@@ -44,6 +44,6 @@ func (h *Handler) Callback(w http.ResponseWriter,r *http.Request) {
 	}
 	
 
-	http.Redirect(w, r, "/connections", http.StatusFound)
+	//http.Redirect(w, r, "/connections", http.StatusFound)
 }
 

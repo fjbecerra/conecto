@@ -16,9 +16,6 @@ import (
 
 )
 
-var stateSignerKey = os.Getenv("STATE_SIGNER")
-var shopifySecret = os.Getenv("SHOPIFY_SECRET")
-
 type Runner struct {
 	Scheduler *sync.Scheduler
 	Worker *sync.Worker
@@ -43,8 +40,22 @@ func (c *Conecto) Build() Runner{
 	stateStore := stores.stateStore
 	credentialService:=  NewCredentialService(stores.credentialStore).Build()
 	pipelineRegitry := pipelines.NewRegistry()
+	connectorRegistry := connectors.NewRegistry()
+
 	for _, path := range c.conectoConfig.PipelineRegistryConfig {
 		pipelineConfig, error := LoadConfig[PipelineConfig](path)
+
+		switch pipelineConfig.ID {
+			case "shopify" :
+				shopifyConnector := shopify.Connector{
+					ClientID:     pipelineConfig.AuthorizeConfig.Oauth.ClientId,
+					ClientSecret: os.Getenv(pipelineConfig.AuthorizeConfig.Oauth.ClientSecret),
+					Scopes:       pipelineConfig.AuthorizeConfig.Oauth.Scopes,
+					AppUrl: 	  pipelineConfig.AuthorizeConfig.Oauth.AppUrl,	
+					HttpClient: &http.Client{},
+				}		
+				connectorRegistry.Register(shopifyConnector)
+		}
 		if(error!=nil){
 			panic("path not found")
 		}
@@ -61,7 +72,6 @@ func (c *Conecto) Build() Runner{
 		panic("unknown buffer type")
 	}
 
-	executor:= sync.NewExecutor(pipelineRegitry, stores.connectionStore)
 
 	retryPolicy := retry.Policy{
 		MaxRetries:     c.conectoConfig.SyncConfig.Retry.MaxRetries,
@@ -79,33 +89,15 @@ func (c *Conecto) Build() Runner{
 		pipelineRegitry, 
 		stores.connectionStore, 
 		stores.jobRepository,
-		executor,
 		retryExecutor,
 	)
 	duration,_:= time.ParseDuration(c.conectoConfig.SyncConfig.Scheduler.Duration)
 	scheduler := sync.NewScheduler(duration,syncService )
 	worker := sync.NewWorker(buffer, syncService)
 	stateSigner := state.NewHMACStateSigner(
-			[]byte(stateSignerKey),
+			[]byte(os.Getenv("AUTH_STATE_SIGNER_KEY")),
 			10*time.Minute)
-
 	
-	connectorRegistry := connectors.NewRegistry()
-
-	for _, pipeline := range pipelineRegitry.GetAll() {
-		switch pipeline.ID {
-			case "shopify" : 
-				shopifyConnector := shopify.Connector{
-					ClientID:     "test-client-id",
-					ClientSecret: shopifySecret,
-					Scopes:       []string{"read_orders"},
-					HttpClient: &http.Client{},
-				}		
-				connectorRegistry.Register(shopifyConnector)
-			default: panic("no connector found")	
-		}
-	}
-		
 	oauthService := oauth.NewService(
 		stores.connectionStore, 
 		credentialService, 

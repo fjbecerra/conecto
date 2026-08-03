@@ -1,9 +1,23 @@
 {
     "id" : "shopify",
+    "authorize": {
+        "type" : "oauth",
+        "oauth":{
+            "app_url" : "https://0bd2-2a0a-ef40-866-6b01-1ddb-c2b2-864f-ba0a.ngrok-free.app",
+            "client_id": "06df04d35be21f9bfc0987849a2f4f66",
+            "client_secret": "SHOPIFY_SECRET",
+            "scopes": ["read_orders", "read_all_orders"]
+        }        
+    },
     "connector" : {
         "type" : "api",
         "api" : {
             "type" : "graphql",
+            "endpoint" : {
+                "type" : "dinamic",
+                "base" : "https://%s.myshopify.com/admin/api/2026-07/graphql.json",
+                "metadata_key": "shop"
+            },
             "graphql":{
                 "data": {
                     "path" : "data.orders.edges",
@@ -28,12 +42,7 @@
         "streams":[
             {
                 "id" : "orders",
-                "mocked_rest":{
-                    "response_paths" : [
-                    "./testdata/response_page_1_orders.json",
-                    "./testdata/response_page_2_orders.json"
-                    ]
-                },
+                "query": "query { orders(first: 10) { edges { cursor node { id } } pageInfo { hasNextPage hasPreviousPage startCursor endCursor } } }",
                 "transformers" : [{ 
                     "type":"extractor", 
                     "extractor":{

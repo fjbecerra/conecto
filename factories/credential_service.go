@@ -6,7 +6,6 @@ import (
 	"os"
 )
 
-var crendentialEncriptionKey = os.Getenv("TOKEN_ENCRYPTION_KEY_V1")
 
 type CredentialService struct{
 	credentialStore credentials.Store
@@ -19,7 +18,7 @@ func NewCredentialService(credentialStore credentials.Store) *CredentialService 
 }
 
 func (c *CredentialService) Build() credentials.CredentialService {	
-	v1, _ := base64.StdEncoding.DecodeString(crendentialEncriptionKey)
+	v1, _ := base64.StdEncoding.DecodeString(os.Getenv("CREDENTIAL_ENCRYPTION_KEY_V1"))
 	keys := map[string][]byte{
 		"v1": v1,
 	}

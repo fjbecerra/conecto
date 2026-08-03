@@ -5,9 +5,22 @@ import (
 	"os"
 )
 
+type AuthorizeConfig struct {
+	AuthorizeType AuthorizeType `json:"type"`
+	Oauth Oauth `json:"oauth"`
+}
+
+type Oauth struct {
+	ClientId string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Scopes []string `json:"scopes"`
+	AppUrl string `json:"app_url"`
+}
+
 type StreamConfig struct {
 	ID  string `json:"id"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
+	Query 	string `json:"query"`
 	TransformersConfig []TransformerConfig `json:"transformers"`
 	DestinationConfig DestinationConfig `json:"destination"`
 	FieldsSpecsConfig map[string]FieldsSpecs `json:"fields_specs"`
@@ -22,6 +35,7 @@ type DestinationConfig struct {
 
 type ApiConfig struct {
 	Type ApiType `json:"type"`	
+	EndpointConfig EndpointConfig `json:"endpoint"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	GraphqlConfig *GraphqlConfig `json:"graphql,omitempty"`
 }
@@ -35,18 +49,21 @@ type ConnectorConfig struct{
 }
 
 type RestConfig struct{	
-	BaseUrl string `json:"base_url"`
 	DataConfig DataConfig `json:"data"`
     PaginationConfig PaginationConfig `json:"pagination"`
 	AuthenticationConfig AuthenticationConfig `json:"authentication"`	
 }
 
 type GraphqlConfig struct {
-	BaseUrl string `json:"base_url"`
-	Query 	string `json:"query"`
 	DataConfig DataConfig `json:"data"`
     PaginationConfig GraphqlPaginationConfig `json:"pagination"`
 	AuthenticationConfig AuthenticationConfig `json:"authentication"`
+}
+
+type EndpointConfig struct {
+	EndpointType EndpointType `json:"type"`
+	Base string `json:"base"`
+	MetadataKey string `json:"metadata_key"`
 }
 
 type GraphqlPaginationConfig struct {
@@ -133,6 +150,7 @@ type SourcesConfig map[string]struct {
 
 type PipelineConfig struct {
 	ID string `json:"id"`
+	AuthorizeConfig AuthorizeConfig `json:"authorize"`
 	ConnectorConfig ConnectorConfig `json:"connector"`
 	SinkConfig SinkConfig `json:"sink"`
 }
@@ -232,6 +250,17 @@ const(
 	QueueType BufferType = "queue"
 )
 
+type EndpointType string
+const(
+	DinamicEndpointType EndpointType = "dinamic"
+	StaticEndpointType EndpointType = "fixed"
+)
+
+
+type AuthorizeType string
+const (
+	OauthType AuthorizeType = "oauth"
+)
 
 
 

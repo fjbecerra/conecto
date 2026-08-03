@@ -100,12 +100,20 @@ func (s *Service) HandleCallback(ctx context.Context, values url.Values) error {
 
 
 	// 5. Save credential securely
-	s.credentialService.Save(
+	err = s.credentialService.Save(
 			ctx,
 			connection,
 			credential,
 	)
 
-	//6. Start sync job
+	//6. Update connection status
+	s.connectionStore.UpdateStatus(ctx, connectionID, connections.StatusConnected )
+
+
+	if err != nil {
+		return err
+	}
+
+	//7. Start sync job - this should be a backfill of last 90 days
 	return s.syncService.ScheduleConnectionSync(ctx,connection)
 }

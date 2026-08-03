@@ -98,9 +98,9 @@ func (e *SinkEngine) Shutdown(
 
     var errs []error
 
-    if err := e.StateStore.Close(); err != nil {
-        errs = append(errs, err)
-    }
+    // if err := e.StateStore.Close(); err != nil {
+    //     errs = append(errs, err)
+    // }
 
     if err := e.Executor.Close(); err != nil {
         errs = append(errs, err)

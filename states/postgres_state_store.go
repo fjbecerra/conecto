@@ -26,7 +26,7 @@ func (s *PostgresStateStore) Load(context context.Context, ID string) (statestor
 	var status string
 
 	err := s.db.QueryRowContext(context,
-		`SELECT cursor, status FROM pipeline_state WHERE pipeline_id=$1`,
+		`SELECT cursor, status FROM streams_state WHERE pipeline_id=$1`,
 		ID,
 	).Scan(&cursorBytes, &status)
 
@@ -53,7 +53,7 @@ func (c *PostgresStateStore) Save(context context.Context, ID string,state state
 		return nil, error
 	}
 	query:= `
-		INSERT INTO pipeline_state (
+		INSERT INTO streams_state (
 			pipeline_id,
 			cursor,
 			status

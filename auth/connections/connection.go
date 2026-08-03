@@ -3,6 +3,8 @@ package connections
 import "time"
 
 const (
+	StatusConnected = "connected"
+	StatusUnconnected = "Unconnected"
 	SyncIdle    = "idle"
 	SyncQueued  = "queued"
 	SyncRunning = "running"

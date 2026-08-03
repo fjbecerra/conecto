@@ -10,7 +10,7 @@
                 "size" : 100
             },
             "scheduler": {
-                "duration" : "5m"
+                "duration" : "1s"
             },
              "retry": {
                 "max_retries": 3,
@@ -20,7 +20,7 @@
         },
         
         "stores": {
-            "type" : "memory",
+            "type" : "postgres",
             "source" : "source1"
         },
         
