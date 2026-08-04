@@ -48,7 +48,7 @@ func (c *Connector) Build() engines.ConnectorRunnable {
 
 	switch c.config.ApiConfig.EndpointConfig.EndpointType{
 		case DinamicEndpointType:
-			endpointProvider = api.NewDinamicEndpointProvider(c.config.ApiConfig.EndpointConfig.Base, c.config.ApiConfig.EndpointConfig.MetadataKey)
+			endpointProvider = api.NewDinamicEndpointProvider(c.config.ApiConfig.EndpointConfig.Base, c.config.ApiConfig.EndpointConfig.MetadataKeys)
 		case StaticEndpointType:
 			endpointProvider = api.NewStaticEndpointProvider(c.config.ApiConfig.EndpointConfig.Base)
 		default:

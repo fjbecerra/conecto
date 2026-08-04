@@ -62,6 +62,7 @@ func (p *Pipeline) Build() pipelines.Pipeline{
 			SinkCommiter: sinkCommiter,
 		}
 		stream := pipelines.Stream{
+			Name: streamConfig.Name,
 			Engine: &engine,
 			StateStore: p.stateStore,
 		}

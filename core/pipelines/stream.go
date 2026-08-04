@@ -18,6 +18,7 @@ type EngineRunner interface {
 
 
 type Stream struct {
+	Name string
 	Engine 		*engines.Engine
 	StateStore  statestores.StateStore
 }
@@ -28,7 +29,7 @@ func (p *Stream) Run(context context.Context,connection connections.Connection) 
 	g, ctxWithCancel := errgroup.WithContext(context)
 
 	// LOAD CHECKPOINT (ONLY ONCE)
-	state, err := p.StateStore.Load(ctxWithCancel, connection.ID)
+	state, err := p.StateStore.Load(ctxWithCancel, connection.ID, p.Name)
 	if err != nil {
 		return err
 	}
@@ -73,6 +74,7 @@ func (p *Stream) Run(context context.Context,connection connections.Connection) 
             if err := p.Engine.SinkCommiter.Commit(
                 ctxWithCancel,
 				connection.ID,
+				p.Name,
                 batch,
             ); err != nil {
                 return err
@@ -90,13 +92,13 @@ func (p *Stream) Run(context context.Context,connection connections.Connection) 
 			return nil
 
 		case errors.Is(err, ctxWithCancel.Err()):
-			p.StateStore.Save(ctxWithCancel, connection.ID, statestores.State{
+			p.StateStore.Save(ctxWithCancel, connection.ID, p.Name, statestores.State{
 				Status: statestores.Stopped,
 			})
 			return err
 
 		default:
-			p.StateStore.Save(ctxWithCancel, connection.ID, statestores.State{
+			p.StateStore.Save(ctxWithCancel, connection.ID, p.Name, statestores.State{
 				Status: statestores.Failed,
 			})
 			return err

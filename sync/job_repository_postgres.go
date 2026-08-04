@@ -24,7 +24,7 @@ func (r *PostgresJobRepository) Create(ctx context.Context, job SyncJob) error {
 		INSERT INTO sync_jobs (
 			id,
 			connection_id,
-			pipeline_id,
+			provider,
 			status,
 			attempt,
 			max_retries,
@@ -46,7 +46,7 @@ func (r *PostgresJobRepository) Create(ctx context.Context, job SyncJob) error {
 		`,
 		job.ID,
 		job.ConnectionID,
-		job.PipelineID,
+		job.Provider,
 		job.Status,
 		job.Attempt,
 		job.MaxRetries,

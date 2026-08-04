@@ -20,14 +20,14 @@ func NewStateStore(db *sql.DB) *PostgresStateStore{
 	}
 }
 
-func (s *PostgresStateStore) Load(context context.Context, ID string) (statestores.State, error) {
+func (s *PostgresStateStore) Load(context context.Context, ID string, name string) (statestores.State, error) {
 	var st statestores.State
 	var cursorBytes []byte
 	var status string
 
 	err := s.db.QueryRowContext(context,
-		`SELECT cursor, status FROM streams_state WHERE pipeline_id=$1`,
-		ID,
+		`SELECT cursor, status FROM streams_state WHERE connection_id=$1 AND name=$2`,
+		ID, name,
 	).Scan(&cursorBytes, &status)
 
 	if err == sql.ErrNoRows {
@@ -46,7 +46,7 @@ func (s *PostgresStateStore) Load(context context.Context, ID string) (statestor
 	return st, nil
 }
 
-func (c *PostgresStateStore) Save(context context.Context, ID string,state statestores.State) ([]commands.Command, error) {
+func (c *PostgresStateStore) Save(context context.Context, ID string, name string, state statestores.State) ([]commands.Command, error) {
 
 	b, error := json.Marshal(state.Cursor)
 	if error != nil{
@@ -54,20 +54,21 @@ func (c *PostgresStateStore) Save(context context.Context, ID string,state state
 	}
 	query:= `
 		INSERT INTO streams_state (
-			pipeline_id,
+			connection_id,
+			name,
 			cursor,
 			status
 		)
-		VALUES ($1,$2,$3)
+		VALUES ($1,$2,$3,$4)
 
-		ON CONFLICT(pipeline_id)
+		ON CONFLICT(connection_id, name)
 		DO UPDATE SET
 			cursor = EXCLUDED.cursor,
 			status = EXCLUDED.status,
 			updated_at = NOW();
 		`
 	values := []interface{}{}
-	values = append(values, ID, b, state.Status.String())
+	values = append(values, ID, name, b, state.Status.String())
 	return []commands.Command{
         &db.SQLCommand{
            Query: query,

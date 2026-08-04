@@ -6,8 +6,8 @@ import (
 )
 
 type StateStore interface {
-	Load(runtime context.Context, ID string) (State, error)
-	Save(runtime context.Context, ID string, state State) ([]commands.Command, error)
+	Load(runtime context.Context, ID string, name string) (State, error)
+	Save(runtime context.Context, ID string, name string, state State) ([]commands.Command, error)
 	Close()error
 }
 

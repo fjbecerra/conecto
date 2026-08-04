@@ -80,7 +80,7 @@ func (s *SyncService) createJob(ctx context.Context, conn connections.Connection
 	job := SyncJob{
 		ID: uuid.NewString(),
 		ConnectionID: conn.ID,
-		PipelineID: conn.Provider,
+		Provider: conn.Provider,
 		Status: JobPending,
 		Attempt: 0,
 		MaxRetries: 3,
@@ -134,14 +134,14 @@ func (e *SyncService) execute(ctx context.Context, job SyncJob) error {
 		return err
 	}
 
-	pipeline, err := e.registry.Get(job.PipelineID)
+	pipeline, err := e.registry.Get(job.Provider)
 
 	if err != nil {
 		return err
 	}
 
 	for _, stream := range pipeline.Streams {
-		
+
 
 		err := stream.Run(ctx,conn)
 

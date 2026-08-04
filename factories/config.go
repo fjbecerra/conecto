@@ -18,7 +18,7 @@ type Oauth struct {
 }
 
 type StreamConfig struct {
-	ID  string `json:"id"`
+	Name  string `json:"name"`
 	MockedRestConfig *MockedRestConfig `json:"mocked_rest,omitempty"`
 	Query 	string `json:"query"`
 	TransformersConfig []TransformerConfig `json:"transformers"`
@@ -64,7 +64,7 @@ type GraphqlConfig struct {
 type EndpointConfig struct {
 	EndpointType EndpointType `json:"type"`
 	Base string `json:"base"`
-	MetadataKey string `json:"metadata_key"`
+	MetadataKeys []string `json:"metadata_keys,omitempty"`
 }
 
 type GraphqlPaginationConfig struct {

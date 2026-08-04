@@ -48,12 +48,12 @@ func (c *conectoStore) Build() Stores {
 			
 		case PostgresSource:
 			db := connection.DB
+			connectionStore := connections.NewPostgresStore(db)
+			createConnectionsTable("connections", db)
 			credentialStore:= credentials.NewPostgresCredentialStore(db)
 			createCredentialTable("credentials_store", db)
 			stateStore:= states.NewStateStore(db)
-			createStateTable("streams_state", db)
-			connectionStore := connections.NewPostgresStore(db)
-			createConnectionsTable("connections", db)
+			createStateTable("streams_state", db)			
 			jobRepository:= sync.NewPostgresJobRepository(db)
 			createJobRepositoryTable("sync_jobs", db)
 			return Stores{
@@ -72,14 +72,16 @@ func (c *conectoStore) Build() Stores {
 func createCredentialTable(tableName string, db *sql.DB) {
 	query := `
 		CREATE TABLE IF NOT EXISTS %s (
-			connection_id    TEXT NOT NULL,
+			id SERIAL PRIMARY KEY,
+			connection_id  UUID NOT NULL,
 			ciphertext     BYTEA NOT NULL,
 			nonce          BYTEA NOT NULL,
 			key_version    TEXT NOT NULL,
 			expires_at     TIMESTAMPTZ,
 			created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			PRIMARY KEY (connection_id)
+			CONSTRAINT credentials_store_connection_id_unique UNIQUE (connection_id),
+			FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
 	);
 	`
 	_, err := db.Exec(fmt.Sprintf(query, tableName))
@@ -94,10 +96,14 @@ func createStateTable(tableName string, db *sql.DB) {
 	query := `
 	CREATE TABLE IF NOT EXISTS %s (
 		id SERIAL PRIMARY KEY,
-		pipeline_id TEXT NOT NULL UNIQUE,
+		name TEXT NOT NULL,
+		connection_id UUID NOT NULL,
 		cursor JSONB NOT NULL,
 		status TEXT NOT NULL,
-		updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+		updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+		CONSTRAINT streams_state_connection_id_unique UNIQUE (connection_id),
+		CONSTRAINT streams_state_name_unique UNIQUE (name),
+		FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
 	)
 	`
 	_, err := db.Exec(fmt.Sprintf(query, tableName))
@@ -137,7 +143,7 @@ func createJobRepositoryTable(tableName string, db *sql.DB) {
 	CREATE TABLE IF NOT EXISTS %s (
     id UUID PRIMARY KEY,
     connection_id UUID NOT NULL,
-    pipeline_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
     status TEXT NOT NULL,
     attempt INT NOT NULL,
     max_retries INT NOT NULL,
@@ -145,7 +151,8 @@ func createJobRepositoryTable(tableName string, db *sql.DB) {
     last_error TEXT,
     created_at TIMESTAMP NOT NULL,
     started_at TIMESTAMP,
-    finished_at TIMESTAMP
+    finished_at TIMESTAMP,
+	FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
 );
 	`
 	_, err := db.Exec(fmt.Sprintf(query, tableName))

@@ -18,7 +18,7 @@ type SyncJob struct {
 
 	ConnectionID string
 
-	PipelineID string
+	Provider string
 
 	Status JobStatus
 

@@ -3,7 +3,7 @@
     "authorize": {
         "type" : "oauth",
         "oauth":{
-            "app_url" : "https://0bd2-2a0a-ef40-866-6b01-1ddb-c2b2-864f-ba0a.ngrok-free.app",
+            "app_url" : "https://932f-2a0a-ef40-866-6b01-6942-fc8e-4bd5-b572.ngrok-free.app",
             "client_id": "06df04d35be21f9bfc0987849a2f4f66",
             "client_secret": "SHOPIFY_SECRET",
             "scopes": ["read_orders"]
@@ -16,8 +16,8 @@
             "source" : "http_client",
             "endpoint" : {
                 "type" : "dinamic",
-                "base" : "https://%s.myshopify.com/admin/api/2026-07/graphql.json",
-                "metadata_key": "shop"
+                "base" : "https://%s.myshopify.com/admin/api/%s/graphql.json",
+                "metadata_keys": ["shop", "api_version"]
             },
             "graphql":{
                 "data": {
@@ -42,7 +42,7 @@
         },
         "streams":[
             {
-                "id" : "orders",
+                "name" : "orders",
                 "query": "query { orders(first: 10) { edges { cursor node { id } } pageInfo { hasNextPage hasPreviousPage startCursor endCursor } } }",
                 "transformers" : [{ 
                     "type":"extractor", 

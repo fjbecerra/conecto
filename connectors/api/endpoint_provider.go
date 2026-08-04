@@ -12,18 +12,22 @@ type EndPointProvider interface {
 
 type DinamicEndPointProvider struct {
 	endPointTemplate string
-	metadataKey string
+	metadataKeys []string
 }
 
-func NewDinamicEndpointProvider(endPointTemplate string, metadataKey string) *DinamicEndPointProvider{
+func NewDinamicEndpointProvider(endPointTemplate string, metadataKeys []string) *DinamicEndPointProvider{
 	return &DinamicEndPointProvider{
 		endPointTemplate: endPointTemplate,
-		metadataKey: metadataKey,
+		metadataKeys: metadataKeys,
 	}
 }
 
 func (d *DinamicEndPointProvider) Apply(ctx context.Context, connection connections.Connection) string {
-	return fmt.Sprintf(d.endPointTemplate, connection.Metadata[d.metadataKey])
+	args := make([]interface{}, len(d.metadataKeys))
+	for i, key := range d.metadataKeys {
+		args[i] = connection.Metadata[key]
+	}
+	return fmt.Sprintf(d.endPointTemplate, args...)
 }
 
 type StaticEndpointProvider struct {

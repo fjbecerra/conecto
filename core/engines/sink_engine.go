@@ -10,7 +10,7 @@ import (
 
 
 type SinkCommiter interface{
-	Commit(ctx context.Context, ID string, batch core.Batch) error
+	Commit(ctx context.Context, ID string, streamName string, batch core.Batch) error
 }
 
 type SinkEngine struct {
@@ -21,7 +21,7 @@ type SinkEngine struct {
     Executor   commands.CommandExecutor
 }
 
-func (a *SinkEngine) Commit(context context.Context, ID string, batch core.Batch) error {
+func (a *SinkEngine) Commit(context context.Context, ID string, streamName string, batch core.Batch) error {
 
     // 1. WRITE EVENTS
 
@@ -61,6 +61,7 @@ func (a *SinkEngine) Commit(context context.Context, ID string, batch core.Batch
             a.StateStore.Save(
                 context,
                 ID,
+                streamName,
                 statestores.State{
                     Cursor: batch.Cursor,
                     Status: status,
