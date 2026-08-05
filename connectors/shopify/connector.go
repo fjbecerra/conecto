@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"conecto/auth/connections"
 	"conecto/auth/credentials"
+	"conecto/connectors/api"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -18,13 +19,14 @@ type Connector struct {
 	ClientSecret string
 	Scopes []string
 	AppUrl string
-
+	EndpointApiProvider api.EndPointProvider
+	ResponseProvider api.ResponseProvider
 	HttpClient *http.Client
 }
 
 
 
-func (c Connector) Name() string {
+func (c *Connector) Name() string {
 	return "shopify"
 }
 
@@ -33,7 +35,7 @@ type TokenResponse struct {
 	Scope       string `json:"scope"`
 }
 
-func (c Connector) Exchange(ctx context.Context,connection connections.Connection,code string)(credentials.Credential,error){
+func (c *Connector) Exchange(ctx context.Context,connection connections.Connection,code string)(credentials.Credential,error){
 	shop := connection.Metadata["shop"]
 	body := map[string]string{
 		"client_id": c.ClientID,
@@ -79,7 +81,7 @@ func (c Connector) Exchange(ctx context.Context,connection connections.Connectio
 	},nil
 }
 
-func (c Connector) AuthorizeURL(ctx context.Context, connection connections.Connection,state string)(string,error){
+func (c *Connector) AuthorizeURL(ctx context.Context, connection connections.Connection, state string) (string,error){
 	shop := connection.Metadata["shop"]
 	params := url.Values{}
 	
@@ -101,6 +103,14 @@ func (c Connector) AuthorizeURL(ctx context.Context, connection connections.Conn
 	return fmt.Sprintf("https://%s.myshopify.com/admin/oauth/authorize?%s", shop, params.Encode()),nil
 }
 
-func (c Connector) Refresh(ctx context.Context,connection connections.Connection,credential credentials.Credential) (credentials.Credential,error){
+func (c *Connector) Refresh(ctx context.Context,connection connections.Connection,credential credentials.Credential) (credentials.Credential,error){
 	return credential,nil
+}
+
+func (c *Connector) GetEndpointApiProvider() api.EndPointProvider {
+	return c.EndpointApiProvider
+}
+
+func (c *Connector) GetResponseProvider() api.ResponseProvider {
+	return c.ResponseProvider
 }

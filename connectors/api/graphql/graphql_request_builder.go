@@ -10,7 +10,7 @@ import (
 )
 
 type GraphQLRequestBuilder struct {
-	EndPointProvider  api.EndPointProvider
+	EndpointProvider  api.EndPointProvider
 	Query    string
 	VariableCursorKey string
 	Headers           map[string]string
@@ -42,7 +42,7 @@ func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCurso
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		b.EndPointProvider.Apply(ctx, connection),
+		b.EndpointProvider.Apply(connection),
 		bytes.NewBuffer(bodyBytes),
 	)
 	if err != nil {

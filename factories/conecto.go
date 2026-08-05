@@ -73,23 +73,25 @@ func (c *Conecto) Build() IRunner{
 
 	for _, path := range c.conectoConfig.PipelineRegistryConfig {
 		pipelineConfig, error := LoadConfig[PipelineConfig](path)
-
+		var connector connectors.Connector
 		switch pipelineConfig.ID {
 			case "shopify" :
-				shopifyConnector := shopify.Connector{
+				connector = &shopify.Connector{
 					ClientID:     pipelineConfig.AuthorizeConfig.Oauth.ClientId,
 					ClientSecret: os.Getenv(pipelineConfig.AuthorizeConfig.Oauth.ClientSecret),
 					Scopes:       pipelineConfig.AuthorizeConfig.Oauth.Scopes,
 					AppUrl: 	  pipelineConfig.AuthorizeConfig.Oauth.AppUrl,	
+					EndpointApiProvider: &shopify.ShopifyEndpointProvider{},
+					ResponseProvider: &shopify.ShopifyResponseProvider{},
 					HttpClient: &http.Client{},
 				}		
-				connectorRegistry.Register(shopifyConnector)
+				connectorRegistry.Register(connector)
 		}
 		if(error!=nil){
 			panic("path not found")
 		}
 		
-		pipeline:= NewPipeline(connections, random, stateStore, credentialService ,pipelineConfig).Build()
+		pipeline:= NewPipeline(connector, connections, random, stateStore, credentialService ,pipelineConfig).Build()
 		pipelineRegitry.Register(pipeline)
 	}
 

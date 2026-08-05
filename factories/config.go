@@ -35,7 +35,7 @@ type DestinationConfig struct {
 
 type ApiConfig struct {
 	Type ApiType `json:"type"`	
-	EndpointConfig EndpointConfig `json:"endpoint"`
+	Url string `json:"url"`
 	RestConfig *RestConfig `json:"rest,omitempty"`
 	GraphqlConfig *GraphqlConfig `json:"graphql,omitempty"`
 	Source string `json:"source"`
@@ -59,12 +59,6 @@ type GraphqlConfig struct {
 	DataConfig DataConfig `json:"data"`
     PaginationConfig GraphqlPaginationConfig `json:"pagination"`
 	AuthenticationConfig AuthenticationConfig `json:"authentication"`
-}
-
-type EndpointConfig struct {
-	EndpointType EndpointType `json:"type"`
-	Base string `json:"base"`
-	MetadataKeys []string `json:"metadata_keys,omitempty"`
 }
 
 type GraphqlPaginationConfig struct {
@@ -245,13 +239,6 @@ type BufferType string
 const(
 	QueueType BufferType = "queue"
 )
-
-type EndpointType string
-const(
-	DinamicEndpointType EndpointType = "dinamic"
-	StaticEndpointType EndpointType = "fixed"
-)
-
 
 type AuthorizeType string
 const (

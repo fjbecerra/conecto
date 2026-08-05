@@ -13,6 +13,7 @@ type PaginationProvider struct {
 	Client  *Client
 	Data    DataExtractor
 	Cursor  CursorExtractor
+	ResponseProvider ResponseProvider
 }
 
 func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection connections.Connection) (Page[json.RawMessage], error) {
@@ -32,7 +33,13 @@ func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCurs
 		 errors.New(fmt.Sprintf("%s",resp.Body))
 	}
 
-	rows, err := p.Data.Extract(resp.Body)
+	body, err := p.ResponseProvider.Apply(resp.Body)
+
+	if err != nil {
+		return Page[json.RawMessage]{}, err
+	}
+
+	rows, err := p.Data.Extract(body)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}
