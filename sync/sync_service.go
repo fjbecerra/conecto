@@ -1,31 +1,31 @@
-// sync_service.go
 package sync
 
 import (
-	"conecto/auth/connections"
-	"conecto/core/pipelines"
+	"conecto/core"
 	"conecto/core/retry"
+	"conecto/pipelines"
+	"conecto/stores/connections"
+	"conecto/stores/jobs"
 	"context"
-	"log/slog"
+	"errors"
 	"time"
-
 	"github.com/google/uuid"
 )
 
 type SyncService struct {
 	buffer            Buffer
-	registry         pipelines.Registry
+	pipelineRegistry  pipelines.PipelineRegistry
 	connectionStore  connections.Store
-	jobRepository    JobRepository
+	jobStore    	jobs.JobStore
 	retry 			retry.Executor
 }
 
-func NewSyncService(buffer Buffer, registry pipelines.Registry, connectionStore connections.Store, jobRepository JobRepository,retry retry.Executor) *SyncService{
+func NewSyncService(buffer Buffer, pipelineRegistry pipelines.PipelineRegistry, connectionStore connections.Store, jobStore jobs.JobStore,retry retry.Executor) *SyncService{
 	return &SyncService{
 		buffer: buffer,
-		registry: registry,
+		pipelineRegistry: pipelineRegistry,
 		connectionStore: connectionStore,
-		jobRepository: jobRepository,
+		jobStore: jobStore,
 		retry: retry,
 	}
 }
@@ -39,13 +39,6 @@ func (s *SyncService) ScheduleDueSyncs(ctx context.Context,) error {
 	}
 
 	for _, conn := range connections {
-
-		pipeline, err := s.registry.Get(conn.Provider)
-
-		if err != nil {
-			slog.Error("Pipeline due to sync not register", "pipeline", pipeline.ID)
-			continue
-		}
 
 		job, err := s.createJob(ctx, conn)
 
@@ -61,7 +54,7 @@ func (s *SyncService) ScheduleDueSyncs(ctx context.Context,) error {
 
 
 //this should be a backfill of last 90 days
-func (s *SyncService) ScheduleConnectionSync(ctx context.Context, conn connections.Connection) error {
+func (s *SyncService) ScheduleConnectionSync(ctx context.Context, conn core.Connection) error {
 
 	job, err := s.createJob(ctx, conn)
 
@@ -74,28 +67,28 @@ func (s *SyncService) ScheduleConnectionSync(ctx context.Context, conn connectio
 	return nil
 }
 
-func (s *SyncService) createJob(ctx context.Context, conn connections.Connection,
-) (SyncJob, error) {
+func (s *SyncService) createJob(ctx context.Context, conn core.Connection,
+) (jobs.SyncJob, error) {
 
-	job := SyncJob{
+	job := jobs.SyncJob{
 		ID: uuid.NewString(),
 		ConnectionID: conn.ID,
 		Provider: conn.Provider,
-		Status: JobPending,
+		Status: jobs.JobPending,
 		Attempt: 0,
 		MaxRetries: 3,
 	}
 
-	return job,s.jobRepository.Create(ctx,job)
+	return job,s.jobStore.Create(ctx,job)
 }
 
 
-func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
+func (s *SyncService) ExecuteJob(ctx context.Context, job jobs.SyncJob) error {
 	
 
 	err := s.retry.Do(ctx, func() error {
     		var err error
-    		if err := s.jobRepository.MarkRunning(ctx, job.ID); err != nil {
+    		if err := s.jobStore.MarkRunning(ctx, job.ID); err != nil {
 				return err
 			}
 
@@ -103,7 +96,7 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
 
 			if err == nil {
 
-				if err := s.jobRepository.MarkCompleted(ctx, job.ID); err != nil {
+				if err := s.jobStore.MarkCompleted(ctx, job.ID); err != nil {
 					return err
 				}
 
@@ -116,7 +109,7 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
     		return err
 	})
 	if err != nil {
-		return s.jobRepository.MarkFailed(
+		return s.jobStore.MarkFailed(
 			ctx,
 			job.ID,
 			err,)
@@ -126,7 +119,8 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job SyncJob) error {
 
 }
 
-func (e *SyncService) execute(ctx context.Context, job SyncJob) error {
+func (e *SyncService) execute(ctx context.Context, job jobs.SyncJob) error {
+	var err error
 
 	conn, err := e.connectionStore.Get(ctx,job.ConnectionID)
 
@@ -134,22 +128,16 @@ func (e *SyncService) execute(ctx context.Context, job SyncJob) error {
 		return err
 	}
 
-	pipeline, err := e.registry.Get(job.Provider)
+	pipeline := e.pipelineRegistry.Get(job.Provider)
 
 	if err != nil {
 		return err
 	}
 
+	
 	for _, stream := range pipeline.Streams {
-
-
-		err := stream.Run(ctx,conn)
-
-		if err != nil {
-			//cannot leave
-			return err
-		}
+		err = errors.Join(err, stream.Run(ctx,conn))
 	}
 
-	return nil
+	return err
 }

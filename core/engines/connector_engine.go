@@ -1,7 +1,6 @@
 package engines
 
 import (
-	"conecto/auth/connections"
 	"conecto/core"
 	"conecto/core/retry"
 	"conecto/core/statestores"
@@ -9,7 +8,7 @@ import (
 )
 
 type ConnectorRunnable interface {
-	Run(context context.Context, state statestores.State, out chan<- core.Batch, connection connections.Connection) error
+	Run(context context.Context, state statestores.State, out chan<- core.Batch, connection core.Connection) error
 }
 
 type ConnectorEngine struct {
@@ -21,13 +20,12 @@ func (e *ConnectorEngine) Run(
 	context context.Context,
 	state statestores.State,
 	out chan<- core.Batch,
-	connection connections.Connection,
+	connection core.Connection,
 ) error {
 
 	current := state.Cursor
 
 	var batch core.Batch
-
 	for {
 		 err := e.Retry.Do(context, func() error {
     		var err error
@@ -42,11 +40,9 @@ func (e *ConnectorEngine) Run(
 			return nil
 		}		
 		
-		//end of stream
-		var isLast bool
-		if batch.Cursor == nil {
-			isLast = true
-		}
+		//end of stream		
+		isLast := batch.Cursor == nil
+
 		select {
 		case out <- core.Batch{
 			Events: batch.Events,
@@ -55,6 +51,10 @@ func (e *ConnectorEngine) Run(
 		}:
 		case <-context.Done():
 			return context.Err()
+		}
+
+		if isLast {
+			return nil
 		}
 
 		current = batch.Cursor

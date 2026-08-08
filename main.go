@@ -2,6 +2,7 @@ package main
 
 import (
 	"conecto/factories"
+	"conecto/shared/config"
 	"context"
 	"fmt"
 	"log"
@@ -32,7 +33,7 @@ func main() {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	appConfig, err := factories.LoadConfig[factories.AppConfig](
+	appConfig, err := config.LoadConectoConfig[config.App](
 		"./config/conecto.json",
 	)
 
@@ -41,7 +42,7 @@ func main() {
 	}
 
 
-	runner := factories.NewConecto(appConfig.ConectoConfig).Build()
+	runner := factories.NewConectoRunner(appConfig.Conecto)
 
 
 	ctx, cancel := signal.NotifyContext(
@@ -62,7 +63,7 @@ func main() {
 	server := &http.Server{
 		Addr: fmt.Sprintf(
 			":%s",
-			strconv.Itoa(appConfig.ConectoConfig.HttpServerConfig.Port),
+			strconv.Itoa(appConfig.Conecto.HttpServer.Port),
 		),
 		Handler: runner.RunRouter(),
 	}
@@ -100,7 +101,7 @@ func main() {
 	}
 
 	// 2. Close database connections and other resources
-	if err := runner.Closed(); err != nil {
+	if err := runner.Shutdown(); err != nil {
 		slog.Error(
 			"resource cleanup failed",
 			"error",

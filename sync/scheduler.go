@@ -1,4 +1,3 @@
-// scheduler.go
 package sync
 
 import (

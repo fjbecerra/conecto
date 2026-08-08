@@ -1,4 +1,3 @@
-// worker.go
 package sync
 
 import (

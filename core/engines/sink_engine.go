@@ -8,57 +8,39 @@ import (
 	"context"
 )
 
+type Sinker struct {
+    Sink core.Sink
+    Executor   commands.CommandExecutor
+}
 
 type SinkCommiter interface{
 	Commit(ctx context.Context, ID string, streamName string, batch core.Batch) error
 }
 
 type SinkEngine struct {
-    SinkRetry retry.Executor
-	Sink core.Sink
-    StateStoreRetry retry.Executor
+    Sinker Sinker
+    SinkRetry retry.Executor	
     StateStore statestores.StateStore
-    Executor   commands.CommandExecutor
+   
 }
 
 func (a *SinkEngine) Commit(context context.Context, ID string, streamName string, batch core.Batch) error {
 
-    // 1. WRITE EVENTS
 
     if err := a.SinkRetry.Do(context, func() error {
-
-        cmds, err :=
-            a.Sink.WriteBatch(context,ID, batch.Events)
+        //write events
+        cmdSinker, err :=
+            a.Sinker.Sink.WriteBatch(context,ID, batch.Events)
         if err != nil {
             return err
         }
 
-        for _, cmd := range cmds {
-
-            if err := a.Executor.Execute(
-                context,
-                cmd,
-            ); err != nil {
-                return err
-            }
-        }
-
-        return nil
-
-    }); err != nil {
-        return err
-    }
-
-    // 2. SAVE CHECKPOINT
-
-    if err := a.StateStoreRetry.Do(context, func() error {
-
+        // save checkpoints
         var status statestores.Status
         if batch.IsLast {
             status = statestores.Completed
         }
-        cmds, err :=
-            a.StateStore.Save(
+        cmdStateStore, err := a.StateStore.Save(
                 context,
                 ID,
                 streamName,
@@ -71,22 +53,15 @@ func (a *SinkEngine) Commit(context context.Context, ID string, streamName strin
         if err != nil {
             return err
         }
+        cmds := append(cmdSinker, cmdStateStore...)
 
-        for _, cmd := range cmds {
-
-            if err := a.Executor.Execute(
-                context,
-                cmd,
-            ); err != nil {
+        if err := a.Sinker.Executor.Execute(context,cmds,); err != nil {
                 return err
-            }
         }
-
         return nil
 
     }); err != nil {
         return err
     }
-
     return nil
 }

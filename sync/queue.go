@@ -1,29 +1,31 @@
 package sync
 
+import "conecto/stores/jobs"
+
 
 type Buffer interface {
-	 Publish(job SyncJob)
-	 Consume()<-chan SyncJob
+	 Publish(job jobs.SyncJob)
+	 Consume()<-chan jobs.SyncJob
 }
 
 type Queue struct {
-	jobs chan SyncJob
+	jobs chan jobs.SyncJob
 }
 
 
 func NewQueue(size int)*Queue{
 	return &Queue{
-		jobs: make(chan SyncJob,size),
+		jobs: make(chan jobs.SyncJob,size),
 	}
 }
 
 
-func (q *Queue) Publish(job SyncJob){
+func (q *Queue) Publish(job jobs.SyncJob){
 
 	q.jobs <- job
 }
 
 
-func (q *Queue) Consume()<-chan SyncJob {
+func (q *Queue) Consume()<-chan jobs.SyncJob {
 	return q.jobs
 }
