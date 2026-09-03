@@ -36,9 +36,9 @@ func (a *SinkEngine) Commit(context context.Context, ID string, streamName strin
         }
 
         // save checkpoints
-        var status statestores.Status
+        var status statestores.StateStatus
         if batch.IsLast {
-            status = statestores.Completed
+            status = statestores.Completed            
         }
         cmdStateStore, err := a.StateStore.Save(
                 context,
@@ -47,6 +47,7 @@ func (a *SinkEngine) Commit(context context.Context, ID string, streamName strin
                 statestores.State{
                     Cursor: batch.Cursor,
                     Status: status,
+                    Watermark: &batch.Watermark,
                 },
             )
 

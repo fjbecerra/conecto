@@ -24,12 +24,13 @@ func (e *ConnectorEngine) Run(
 ) error {
 
 	current := state.Cursor
+	watermark:= state.Watermark
 
 	var batch core.Batch
 	for {
 		 err := e.Retry.Do(context, func() error {
     		var err error
-    		batch, err = e.Connector.FetchBatch(context, current, connection)
+    		batch, err = e.Connector.FetchBatch(context, current, connection, watermark)
     		return err
 		})
 		if err != nil {

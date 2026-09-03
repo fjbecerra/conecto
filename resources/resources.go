@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"conecto/core"
 	"conecto/core/engines"
 	"conecto/core/statestores"
 	"conecto/resources/memory"
@@ -48,6 +49,7 @@ type Resource interface {
 	 Close() error
      Connector(cfg config.ConfigBytes) engines.ConnectorRunnable
      Sink(cfg config.ConfigBytes, fieldSpecs config.FieldsSpecs)  engines.SinkCommiter
+     Transformers() []core.Transformer
 }
 
 func (rr *ResourcesRegistry) Register(resources []config.Resource) error {

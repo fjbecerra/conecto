@@ -49,8 +49,11 @@ func (p *PipelineRegistry)  createStreams(cfg config.Streams) []engines.Stream{
 		connector := inbound.Connector(st.Inbound.Config)
 		outbound:= p.resourceRegistry.Get(resources.ResourceName(st.Outbound.Resource))
 		sink:= outbound.Sink(st.Outbound.Config, st.FieldsSpecs)
-		transformer := transformers.CreateTrasformer(st.FieldsSpecs)
-		
+		tfs := 	[]core.Transformer{}
+		tfs = append(tfs, transformers.BuildExtractor(st.FieldsSpecs))
+		inboundTransformers := inbound.Transformers()
+		tfs = append(tfs, inboundTransformers...)
+		transformer:= transformers.CreateTrasformers(tfs)		
 		engine:= engines.Engine {
 			ConnectorRunnable: connector,
 			Transformer: transformer,

@@ -26,10 +26,14 @@ func CreateShopifyConnector(shopifyConnector ShopifyConnector) engines.Connector
 	provider:= &api.HeaderProvider{
 		Name: "X-Shopify-Access-Token",
 	}
+	
 	builder:= &graphql.GraphQLRequestBuilder{
 		EndpointProvider:  &ShopifyEndpointProvider{},
 		Query:    query,
 		VariableCursorKey: "after",
+		WatermarkPath: "query",
+		IncremenatalSyncProvider: &ShopifyIncrementalSyncProvider{},
+
 	}
 
 	dataExtractor := &graphql.GraphQLDataExtractor{
@@ -94,5 +98,10 @@ func (p *ShopifyEndpointProvider) Apply(connection core.Connection) string {
 	shop := connection.Metadata["shop"]
 	apiVersion := connection.Metadata["api_version"]
 	return fmt.Sprintf("https://%s.myshopify.com/admin/api/%s/graphql.json", shop, apiVersion)
+}
+
+type ShopifyIncrementalSyncProvider struct {}
+func (s *ShopifyIncrementalSyncProvider) Apply(watermark *string) string {
+	return fmt.Sprintf("updated_at>%s", *watermark)
 }
 

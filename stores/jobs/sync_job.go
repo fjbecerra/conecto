@@ -18,7 +18,7 @@ const (
 type SyncJob struct {
 	ID string
 
-	ConnectionID string
+	Connection core.Connection
 
 	Provider core.Provider
 

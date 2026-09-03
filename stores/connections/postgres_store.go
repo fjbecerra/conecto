@@ -273,7 +273,7 @@ func (s *PostgresStore) MarkRunning(
 	return err
 }
 
-func (s *PostgresStore) MarkCompleted(ctx context.Context, id string, next time.Time) error {
+func (s *PostgresStore) MarkCompleted(ctx context.Context, connectionId string, nextSyncAt time.Time) error {
 
 
 	_, err := s.db.ExecContext(
@@ -288,8 +288,8 @@ func (s *PostgresStore) MarkCompleted(ctx context.Context, id string, next time.
 
 		WHERE id = $1
 		`,
-		id,
-		next,
+		connectionId,
+		nextSyncAt,
 	)
 
 

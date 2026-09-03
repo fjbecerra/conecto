@@ -5,13 +5,14 @@
             "fields_specs": {               
                     "id": { "path": "id", "type": "string","required" : true, "default": null },
                     "title": { "path": "title", "type": "string","required" : false, "default": null },
-                    "createdAt": { "path": "createdAt", "type": "string","required" : false, "default": null }                
+                    "createdAt": { "path": "createdAt", "type": "string","required" : false, "default": null },   
+                    "updatedAt": { "path": "updatedAt", "type": "string","required" : false, "default": null }                
             },
             "inbound":{
                 "resource": "shopify_1",                
                  "config": {
                     "name": "products",
-                    "query": "query ProductsPage($after: String) { products(first: 10, after: $after) { edges { node { id title createdAt } } pageInfo { hasNextPage endCursor } } }"
+                    "query": "query ProductsPage($after: String, $query: String) { products(first: 10, after: $after, query: $query) { edges { node { id title createdAt updatedAt } } pageInfo { hasNextPage endCursor } } }"
                 }             
             },
             "outbound" : {  

@@ -11,7 +11,7 @@ type HttpConnector struct {
 	Provider *PaginationProvider
 }
 
-func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cursor, connection core.Connection) (core.Batch, error) {
+func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cursor, connection core.Connection, watermark *string) (core.Batch, error) {
 	fmt.Println("SOURCE: sending event")
 	var pc *PageCursor
 
@@ -21,7 +21,7 @@ func (c *HttpConnector) FetchBatch(context context.Context, state statestores.Cu
 		}
 	}
 
-	page, err := c.Provider.FetchPage(context, pc, connection)
+	page, err := c.Provider.FetchPage(context, pc, connection, watermark)
 	if err != nil {
 		return core.Batch{}, err
 	}

@@ -16,9 +16,9 @@ type PaginationProvider struct {
 	ResponseProvider ResponseProvider
 }
 
-func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection core.Connection) (Page[json.RawMessage], error) {
+func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection core.Connection, watermark *string) (Page[json.RawMessage], error) {
 
-	req, err := p.Builder.Build(context, cursor, connection)
+	req, err := p.Builder.Build(context, cursor, connection, watermark)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}

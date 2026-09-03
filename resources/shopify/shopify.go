@@ -163,3 +163,11 @@ func (s *ShopifyResource) fetchToken(bodyReq map[string]string, shop string) (cr
         Expiry: &expiry,
 	},nil
 }
+
+func (s *ShopifyResource) Transformers() []core.Transformer {
+	transformers := []core.Transformer{}
+	transformers = append(transformers, &JsonWatermark{
+		Path: "updatedAt",
+	})
+	return transformers
+}

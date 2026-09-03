@@ -21,6 +21,6 @@ type Store interface {
 	MarkRunning(ctx context.Context,id string) error
 
 
-	MarkCompleted(ctx context.Context, id string, next time.Time) error
+	MarkCompleted(ctx context.Context, connectinId string, next time.Time) error
 
 }

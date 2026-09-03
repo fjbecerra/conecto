@@ -72,7 +72,7 @@ func (s *SyncService) createJob(ctx context.Context, conn core.Connection,
 
 	job := jobs.SyncJob{
 		ID: uuid.NewString(),
-		ConnectionID: conn.ID,
+		Connection: conn,
 		Provider: conn.Provider,
 		Status: jobs.JobPending,
 		Attempt: 0,
@@ -102,12 +102,12 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job jobs.SyncJob) error {
 
 				return s.connectionStore.MarkCompleted(
 					ctx,
-					job.ConnectionID,
+					job.Connection.ID,
 					time.Now().Add(24*time.Hour),//todo. put this in the config
 				)
 			}
     		return err
-	})
+	})  
 	if err != nil {
 		return s.jobStore.MarkFailed(
 			ctx,
@@ -120,24 +120,13 @@ func (s *SyncService) ExecuteJob(ctx context.Context, job jobs.SyncJob) error {
 }
 
 func (e *SyncService) execute(ctx context.Context, job jobs.SyncJob) error {
-	var err error
-
-	conn, err := e.connectionStore.Get(ctx,job.ConnectionID)
-
-	if err != nil {
-		return err
-	}
-
+	
 	pipeline := e.pipelineRegistry.Get(job.Provider)
 
-	if err != nil {
-		return err
-	}
-
-	
+	var errs error
 	for _, stream := range pipeline.Streams {
-		err = errors.Join(err, stream.Run(ctx,conn))
+		errs = errors.Join(errs, stream.Run(ctx,job.Connection))
 	}
 
-	return err
+	return errs
 }

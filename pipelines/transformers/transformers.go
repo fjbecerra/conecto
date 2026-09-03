@@ -6,15 +6,13 @@ import (
 )
 
 
-func CreateTrasformer(fieldsSpecs config.FieldsSpecs) core.Transformer {
-	tranformers := 	[]core.Transformer{}
-	tranformers = append(tranformers, buildExtractor(fieldsSpecs))
+func CreateTrasformers(transformers []core.Transformer) core.Transformer {
 	return &core.Chain{
-		Steps : tranformers,
+		Steps : transformers,
 	}	
 }
 
-func buildExtractor(fieldsSpecs config.FieldsSpecs) core.Transformer {
+func BuildExtractor(fieldsSpecs config.FieldsSpecs) core.Transformer {
 	return &Extractor{
 			Fields : Fields(fieldsSpecs),
 			Selector: &GJSONSelector{},

@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"conecto/core"
 	"conecto/core/engines"
 	"conecto/core/retry"
 	"conecto/core/statestores"
@@ -42,4 +43,8 @@ func(m*MemoryResource) Sink(cfg config.ConfigBytes, fieldSpecs config.FieldsSpec
 		stateStore: m.stateStore,
 	}
     return  CreateMemorySink(memorySink, nil)
+}
+
+func (m*MemoryResource) Transformers() []core.Transformer {
+	return nil
 }

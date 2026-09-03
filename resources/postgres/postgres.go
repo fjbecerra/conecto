@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"conecto/core"
 	"conecto/core/engines"
 	"conecto/core/retry"
 	"conecto/core/statestores"
@@ -47,5 +48,9 @@ func (p *PostgresResource) Sink(cfg config.ConfigBytes, fieldsSpecs config.Field
 }
 
 func (p *PostgresResource) Connector(cfg config.ConfigBytes) engines.ConnectorRunnable {
+	return nil
+}
+
+func (p *PostgresResource) Transformers() []core.Transformer {
 	return nil
 }

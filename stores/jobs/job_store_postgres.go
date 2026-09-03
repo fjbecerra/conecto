@@ -45,7 +45,7 @@ func (r *PostgresJobStore) Create(ctx context.Context, job SyncJob) error {
 		)
 		`,
 		job.ID,
-		job.ConnectionID,
+		job.Connection.ID,
 		job.Provider,
 		job.Status,
 		job.Attempt,

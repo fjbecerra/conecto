@@ -13,7 +13,10 @@ type GraphQLRequestBuilder struct {
 	EndpointProvider  api.EndPointProvider
 	Query    string
 	VariableCursorKey string
-	//Headers           map[string]string
+	WatermarkPath string
+	IncremenatalSyncProvider api.IncrementalSyncProvider
+
+	
 }
 
 type graphQLBody struct {
@@ -21,12 +24,16 @@ type graphQLBody struct {
 	Variables map[string]any `json:"variables,omitempty"`
 }
 
-func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor, connection core.Connection) (*http.Request, error) {
+func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor, connection core.Connection, watermark *string) (*http.Request, error) {
 
 	vars := map[string]any{}
 
 	if cursor != nil && b.VariableCursorKey != "" {
 		vars[b.VariableCursorKey] = cursor.Value
+	}
+
+	if(watermark!=nil && b.WatermarkPath != ""){
+		vars[b.WatermarkPath] = b.IncremenatalSyncProvider.Apply(watermark)
 	}
 
 	payload := graphQLBody{
@@ -50,10 +57,6 @@ func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCurso
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-
-	// for k, v := range b.Headers {
-	// 	req.Header.Set(k, v)
-	// }
 
 	return req, nil
 }

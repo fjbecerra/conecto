@@ -5,14 +5,14 @@ import (
 )
 
 type Transformer interface {
-	Transform(ctx context.Context, batch []Event) ([]Event, error)
+	Transform(ctx context.Context, batch *Batch) (*Batch, error)
 }
 
 type Chain struct {
 	Steps []Transformer
 }
 
-func (c *Chain) Transform(ctx context.Context,batch []Event,) ([]Event, error) {
+func (c *Chain) Transform(ctx context.Context,batch *Batch,) (*Batch, error) {
 
 	var err error
 	current := batch

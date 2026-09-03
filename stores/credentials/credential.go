@@ -1,6 +1,9 @@
 package credentials
 
-import "time"
+import (
+	"conecto/core"
+	"time"
+)
 
 type Credential struct {
 	Type string
@@ -13,6 +16,7 @@ type EncryptedCredential struct {
 	Nonce []byte
 	KeyVersion string
 	ExpiresAt *time.Time
+	Connection core.Connection
 }
 
 

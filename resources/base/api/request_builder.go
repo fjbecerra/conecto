@@ -7,5 +7,5 @@ import (
 )
 
 type RequestBuilder interface {
-	Build(ctx context.Context, cursor *PageCursor, connection core.Connection) (*http.Request, error)
+	Build(ctx context.Context, cursor *PageCursor, connection core.Connection, watermark *string) (*http.Request, error)
 }

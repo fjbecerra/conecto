@@ -5,9 +5,20 @@ import (
 	"encoding/json"
 )
 
+type StateStatus string
+
+const (
+    Running StateStatus = "running"
+    Completed StateStatus = "completed"
+    Failed StateStatus = "failed"
+	Stopped  StateStatus= "stopped"
+    Idle StateStatus = "idle"
+)
+
 type State struct {
-	Cursor   Cursor
-	Status   Status
+	Cursor     Cursor
+	Status     StateStatus
+	Watermark *string //nil means no checkpoint yet, which is the first sync
 }
 
 type Cursor map[string]string

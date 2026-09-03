@@ -25,7 +25,7 @@ func NewAESGCMCredentialService(store Store, credentialKey []byte) *AESGCMCreden
 
 func (s *AESGCMCredentialService) Get(context context.Context, connection core.Connection) (Credential, error) {
 
-	record, err := s.Store.Get(context, connection)
+	record, err := s.Store.GetByConnectionId(context, connection.ID)
 
 	if err != nil {
 		return Credential{}, err
@@ -64,9 +64,10 @@ func (s *AESGCMCredentialService) Save(context context.Context, connection core.
 		Ciphertext: ciphertext,
 		Nonce:      nonce,
 		ExpiresAt:  credential.Expiry,
+		Connection: connection,
 	}
 
-	return s.Store.Save(context, connection, record)
+	return s.Store.Save(context, record)
 }
 
 func (s *AESGCMCredentialService) Close() error {

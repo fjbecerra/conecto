@@ -30,9 +30,6 @@ func (p *Stream) Run(context context.Context,connection core.Connection) error {
 	if err != nil {
 		return err
 	}
-	if state.Status == statestores.Completed {
-    	return nil // NOTHING TO DO
-	}
 
 	// CHANNEL
 	batches := make(chan core.Batch)
@@ -56,17 +53,17 @@ func (p *Stream) Run(context context.Context,connection core.Connection) error {
 
         for batch := range batches {
 
-            events, err :=
+            batchTransformed, err :=
                 p.Engine.Transformer.Transform(
                     ctxWithCancel,
-                    batch.Events,
+                    &batch,
                 )
 
             if err != nil {
                 return err
             }
 
-            batch.Events = events
+            batch = *batchTransformed
 
             if err := p.Engine.SinkCommiter.Commit(
                 ctxWithCancel,

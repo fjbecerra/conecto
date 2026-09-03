@@ -1,7 +1,6 @@
 package credentials
 
 import (
-	"conecto/core"
 	"context"
 	"database/sql"
 	"errors"
@@ -17,7 +16,7 @@ func NewPostgresCredentialStore(db *sql.DB) *PostgresCredentialStore {
 	}
 }
 
-func (p *PostgresCredentialStore) Save(context context.Context, connection core.Connection, record EncryptedCredential) error {
+func (p *PostgresCredentialStore) Save(context context.Context, record EncryptedCredential) error {
 
 	query := `
 	INSERT INTO credentials_store (
@@ -42,7 +41,7 @@ func (p *PostgresCredentialStore) Save(context context.Context, connection core.
 	_, err := p.db.ExecContext(
 		context,
 		query,
-		connection.ID,
+		record.Connection.ID,
 		record.Ciphertext,
 		record.Nonce,
 		record.KeyVersion,
@@ -52,7 +51,7 @@ func (p *PostgresCredentialStore) Save(context context.Context, connection core.
 	return err
 }
 
-func (p *PostgresCredentialStore) Get(context context.Context, connection core.Connection) (EncryptedCredential, error) {
+func (p *PostgresCredentialStore) GetByConnectionId(context context.Context, connectionId string) (EncryptedCredential, error) {
 
 	query := `
 	SELECT
@@ -69,7 +68,7 @@ func (p *PostgresCredentialStore) Get(context context.Context, connection core.C
 	err := p.db.QueryRowContext(
 		context,
 		query,
-		connection.ID,
+		connectionId,
 	).Scan(
 		&record.Ciphertext,
 		&record.Nonce,

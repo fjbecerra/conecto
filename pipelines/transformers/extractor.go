@@ -19,10 +19,10 @@ type Extractor struct {
     Fields Fields
 }
 
-func (e *Extractor) Transform(ctx context.Context, batch []core.Event) ([]core.Event, error) {
-    out := make([]core.Event, 0, len(batch))
+func (e *Extractor) Transform(ctx context.Context, batch *core.Batch) (*core.Batch, error) {
+    out := make([]core.Event, 0, len(batch.Events))
 
-	if len(batch) == 0{
+	if len(batch.Events) == 0{
 		return nil, errors.New("no batch to process.")
 	}
 
@@ -30,7 +30,7 @@ func (e *Extractor) Transform(ctx context.Context, batch []core.Event) ([]core.E
 		return nil, errors.New("no fields specs found.")
 	}
 
-	for _, ev := range batch {		
+	for _, ev := range batch.Events {		
 
 		newObj := make(map[string]any)
 
@@ -51,6 +51,12 @@ func (e *Extractor) Transform(ctx context.Context, batch []core.Event) ([]core.E
 		ev.Payload = b
 		out = append(out, ev)
 	}
+	return &core.Batch{
+		Events: out,
+		Cursor: batch.Cursor,
+		IsLast: batch.IsLast,
+		Watermark: batch.Watermark,
+	},nil
 
-	return out, nil
+	
 }
