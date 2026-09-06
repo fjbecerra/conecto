@@ -14,6 +14,7 @@ type ConnectorRunnable interface {
 type ConnectorEngine struct {
 	Connector core.Connector
 	Retry retry.Executor
+	
 }
 
 func (e *ConnectorEngine) Run(
@@ -23,14 +24,11 @@ func (e *ConnectorEngine) Run(
 	connection core.Connection,
 ) error {
 
-	current := state.Cursor
-	watermark:= state.Watermark
-
 	var batch core.Batch
 	for {
 		 err := e.Retry.Do(context, func() error {
     		var err error
-    		batch, err = e.Connector.FetchBatch(context, current, connection, watermark)
+    		batch, err = e.Connector.FetchBatch(context, state, connection,)
     		return err
 		})
 		if err != nil {
@@ -58,6 +56,6 @@ func (e *ConnectorEngine) Run(
 			return nil
 		}
 
-		current = batch.Cursor
+		state.Cursor = batch.Cursor
 	}
 }

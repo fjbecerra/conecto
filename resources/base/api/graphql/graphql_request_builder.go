@@ -3,6 +3,7 @@ package graphql
 import (
 	"bytes"
 	"conecto/core"
+	"conecto/core/statestores"
 	"conecto/resources/base/api"
 	"context"
 	"encoding/json"
@@ -13,8 +14,7 @@ type GraphQLRequestBuilder struct {
 	EndpointProvider  api.EndPointProvider
 	Query    string
 	VariableCursorKey string
-	WatermarkPath string
-	IncremenatalSyncProvider api.IncrementalSyncProvider
+	SyncRequestProvider api.SyncRequestProvider
 
 	
 }
@@ -24,7 +24,7 @@ type graphQLBody struct {
 	Variables map[string]any `json:"variables,omitempty"`
 }
 
-func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor, connection core.Connection, watermark *string) (*http.Request, error) {
+func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCursor, connection core.Connection, syncState *statestores.SyncState) (*http.Request, error) {
 
 	vars := map[string]any{}
 
@@ -32,8 +32,8 @@ func (b *GraphQLRequestBuilder) Build(ctx context.Context, cursor *api.PageCurso
 		vars[b.VariableCursorKey] = cursor.Value
 	}
 
-	if(watermark!=nil && b.WatermarkPath != ""){
-		vars[b.WatermarkPath] = b.IncremenatalSyncProvider.Apply(watermark)
+	for key, value := range b.SyncRequestProvider.Apply(*syncState) {
+		vars[key] = value
 	}
 
 	payload := graphQLBody{

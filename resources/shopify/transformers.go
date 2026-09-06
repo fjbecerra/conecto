@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"conecto/core"
+	"conecto/core/statestores"
 	"context"
 	"time"
 
@@ -21,10 +22,13 @@ func (t *JsonWatermark) Transform(ctx context.Context, batch *core.Batch) (*core
         	highestWatermark = ts
     	}
 	}
+	stateSyncState := statestores.SyncState{}
+	stateSyncState["watermark"] = highestWatermark.Format(time.RFC3339Nano)
+
 	return &core.Batch{
 		Events: batch.Events,
 		Cursor: batch.Cursor,
 		IsLast: batch.IsLast,
-		Watermark: highestWatermark.Format(time.RFC3339Nano),
+		SyncState: stateSyncState,
 	},nil
 }

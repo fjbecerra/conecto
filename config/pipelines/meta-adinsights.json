@@ -1,0 +1,43 @@
+{
+    "streams":[
+        {
+            "name" : "ads",
+            "fields_specs": {               
+                    "id": { "path": "id", "type": "string","required" : true, "default": null },
+                    "title": { "path": "title", "type": "string","required" : false, "default": null },
+                    "createdAt": { "path": "createdAt", "type": "string","required" : false, "default": null },   
+                    "updatedAt": { "path": "updatedAt", "type": "string","required" : false, "default": null }                
+            },
+            "inbound":{
+                "resource": "meta_1",                
+                 "config": {
+                    //"query": "query ProductsPage($after: String, $query: String) { products(first: 10, after: $after, query: $query) { edges { node { id title createdAt updatedAt } } pageInfo { hasNextPage endCursor } } }"
+                    
+                    "sync": {
+                        "initial": {
+                            "type": "backfill",
+                            "lookback_days": 90
+                        },
+                        "incremental": {
+                            "type": "date_range",
+                            "lookback_days": 7
+                        }
+                    }
+                }             
+            },
+            "outbound" : {  
+                "resource": "postgres_1",
+                "config":{
+                    "table" : "shopify_products",
+                    "auto_create": true
+                },
+                "batch_size" : 10,   
+                "retry": {
+                    "max_retries": 3,
+                    "backoff_ms": 500,
+                    "max_backoff" : 500
+                }
+            }            
+        }
+    ]
+}

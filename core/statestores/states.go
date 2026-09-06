@@ -18,10 +18,12 @@ const (
 type State struct {
 	Cursor     Cursor
 	Status     StateStatus
-	Watermark *string //nil means no checkpoint yet, which is the first sync
+	SyncState  *SyncState 
 }
 
 type Cursor map[string]string
+
+type SyncState map[string]string
 
 func Encode(c Cursor) string {
 	if c == nil {

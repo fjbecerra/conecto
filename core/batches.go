@@ -35,5 +35,5 @@ type Batch struct {
 	Events []Event
 	Cursor statestores.Cursor
 	IsLast bool
-	Watermark string
+	SyncState statestores.SyncState 
 }

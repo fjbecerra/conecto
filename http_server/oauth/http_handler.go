@@ -18,6 +18,19 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) Authorize(w http.ResponseWriter,r *http.Request) {
 	connectionID := chi.URLParam(r, "connectionID")
 
+	//antoher methd in the service to check if the connection exists and is valid
+	// connection := h.service.FindByIdentity(resource, identity)
+
+	// if connection != nil {
+	// 	// Already connected.
+	// 	// Update token if necessary.
+	// 	// Don't enqueue initial backfill.
+	// w.WriteHeader(http.StatusOK)
+	// w.Write([]byte("Alreay connected."))
+	// 	
+	// }
+
+
 	redirectURL, err := h.service.BeginAuthorization(
 		r.Context(),
 		connectionID,

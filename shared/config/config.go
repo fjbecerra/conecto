@@ -11,8 +11,8 @@ import (
 type Stream struct {
 	Name  string `json:"name"`
 	Testing *Testing `json:"testing,omitempty"`
-	Inbound Inbound `json:"inbound"`
-	Outbound Outbound `json:"outbound"`
+	Connector Connector `json:"connector"`
+	Sink Sink `json:"sink"`
 	FieldsSpecs FieldsSpecs `json:"fields_specs"`
 }
 
@@ -24,13 +24,13 @@ type Testing struct {
 	MockedRest *MockedRest `json:"mocked_rest,omitempty"`
 }
 
-type Inbound struct {
+type Connector struct {
 	Resource string `json:"resource"`
 	Config 	 ConfigBytes `json:"config"`
 	
 }
 
-type Outbound struct {
+type Sink struct {
 	Resource string `json:"resource"`
 	Config 	 ConfigBytes `json:"config"`
 	Retry *Retry `json:"retry,omitempty"`

@@ -4,11 +4,13 @@ import (
 	"conecto/core"
 	"conecto/core/engines"
 	"conecto/core/retry"
+	"conecto/core/statestores"
 	"conecto/resources/base/api"
 	"conecto/resources/base/api/graphql"
 	"conecto/stores/credentials"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 
@@ -20,7 +22,7 @@ type ShopifyConnector struct {
 }
 
 func CreateShopifyConnector(shopifyConnector ShopifyConnector) engines.ConnectorRunnable {
-	name:= shopifyConnector.cfg.Name
+	//name:= shopifyConnector.cfg.Name
 	query:=shopifyConnector.cfg.Query
 
 	provider:= &api.HeaderProvider{
@@ -31,8 +33,10 @@ func CreateShopifyConnector(shopifyConnector ShopifyConnector) engines.Connector
 		EndpointProvider:  &ShopifyEndpointProvider{},
 		Query:    query,
 		VariableCursorKey: "after",
-		WatermarkPath: "query",
-		IncremenatalSyncProvider: &ShopifyIncrementalSyncProvider{},
+		SyncRequestProvider: &ShopifySyncRequestProvider{
+			backfillLastNDays: shopifyConnector.cfg.BackfillLastNDays,
+			watermarkLastNDays: shopifyConnector.cfg.IncrementalLastNDays,
+		},
 
 	}
 
@@ -100,8 +104,28 @@ func (p *ShopifyEndpointProvider) Apply(connection core.Connection) string {
 	return fmt.Sprintf("https://%s.myshopify.com/admin/api/%s/graphql.json", shop, apiVersion)
 }
 
-type ShopifyIncrementalSyncProvider struct {}
-func (s *ShopifyIncrementalSyncProvider) Apply(watermark *string) string {
-	return fmt.Sprintf("updated_at>%s", *watermark)
+type ShopifySyncRequestProvider struct {
+	backfillLastNDays int
+	watermarkLastNDays int
 }
-
+func (s *ShopifySyncRequestProvider) Apply(syncState statestores.SyncState) map[string]any {
+	if(syncState == nil){
+		if(s.backfillLastNDays > 0){
+			t := time.Now()
+			from := t.AddDate(0, 0, -s.backfillLastNDays)
+			return map[string]any{
+				"query": fmt.Sprintf("updated_at>%s", from.UTC().Format(time.RFC3339)),
+			}
+		}
+		return nil	
+	}	
+	if(syncState["watermark"] != ""){
+		t, _ := time.Parse(time.RFC3339, syncState["watermark"])
+		from := t.AddDate(0, 0, s.watermarkLastNDays)
+		return map[string]any{
+				"query": fmt.Sprintf("updated_at>%s", from),
+		}
+	}
+	return nil
+	
+}

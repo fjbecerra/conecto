@@ -21,7 +21,6 @@ type SinkEngine struct {
     Sinker Sinker
     SinkRetry retry.Executor	
     StateStore statestores.StateStore
-   
 }
 
 func (a *SinkEngine) Commit(context context.Context, ID string, streamName string, batch core.Batch) error {
@@ -47,7 +46,7 @@ func (a *SinkEngine) Commit(context context.Context, ID string, streamName strin
                 statestores.State{
                     Cursor: batch.Cursor,
                     Status: status,
-                    Watermark: &batch.Watermark,
+                    SyncState: &batch.SyncState,
                 },
             )
 

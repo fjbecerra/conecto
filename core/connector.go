@@ -6,5 +6,5 @@ import (
 )
 
 type Connector interface {
-	FetchBatch(context context.Context, state statestores.Cursor, connection Connection, watermark *string) (Batch, error)
+	FetchBatch(context context.Context, state statestores.State, connection Connection,) (Batch, error)
 }

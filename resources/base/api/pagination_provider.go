@@ -2,6 +2,7 @@ package api
 
 import (
 	"conecto/core"
+	"conecto/core/statestores"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,9 +17,9 @@ type PaginationProvider struct {
 	ResponseProvider ResponseProvider
 }
 
-func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection core.Connection, watermark *string) (Page[json.RawMessage], error) {
+func (p *PaginationProvider) FetchPage(context context.Context, cursor *PageCursor, connection core.Connection, syncState *statestores.SyncState) (Page[json.RawMessage], error) {
 
-	req, err := p.Builder.Build(context, cursor, connection, watermark)
+	req, err := p.Builder.Build(context, cursor, connection, syncState)
 	if err != nil {
 		return Page[json.RawMessage]{}, err
 	}

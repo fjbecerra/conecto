@@ -24,12 +24,12 @@ func (s *PostgresStateStore) Load(context context.Context, ID string, name strin
 	var st statestores.State
 	var cursorBytes []byte
 	var status statestores.StateStatus
-	var watermark string
+	var syncStateBytes []byte
 
 	err := s.db.QueryRowContext(context,
-		`SELECT cursor, status, watermark FROM streams_state WHERE connection_id=$1 AND name=$2`,
+		`SELECT cursor, status, sync_state FROM streams_state WHERE connection_id=$1 AND name=$2`,
 		ID, name,
-	).Scan(&cursorBytes, &status, &watermark)
+	).Scan(&cursorBytes, &status, &syncStateBytes)
 
 	if err == sql.ErrNoRows {
 		return statestores.State{}, nil
@@ -40,13 +40,17 @@ func (s *PostgresStateStore) Load(context context.Context, ID string, name strin
 
 	json.Unmarshal(cursorBytes, &st.Cursor,)
 	st.Status=status
-	st.Watermark = &watermark
+	json.Unmarshal(syncStateBytes, &st.SyncState,)
 	return st, nil
 }
 
 func (c *PostgresStateStore) Save(context context.Context, ID string, name string, state statestores.State) ([]commands.Command, error) {
 
-	b, error := json.Marshal(state.Cursor)
+	cursorBytes, error := json.Marshal(state.Cursor)
+	if error != nil{
+		return nil, error
+	}
+	syncStateBytes, error := json.Marshal(state.SyncState)
 	if error != nil{
 		return nil, error
 	}
@@ -56,7 +60,7 @@ func (c *PostgresStateStore) Save(context context.Context, ID string, name strin
 			name,
 			cursor,
 			status,
-			watermark
+			sync_state
 		)
 		VALUES ($1,$2,$3,$4,$5)
 
@@ -65,10 +69,10 @@ func (c *PostgresStateStore) Save(context context.Context, ID string, name strin
 			cursor = EXCLUDED.cursor,
 			status = EXCLUDED.status,
 			updated_at = NOW(),
-			watermark = EXCLUDED.watermark;
+			sync_state = EXCLUDED.sync_state;
 		`
 	values := []interface{}{}
-	values = append(values, ID, name, b, state.Status, state.Watermark)
+	values = append(values, ID, name, cursorBytes, state.Status, syncStateBytes)
 	return []commands.Command{
         &db.SQLCommand{
            Query: query,

@@ -82,7 +82,7 @@ func createStateTable(tableName string, db *sql.DB) {
 		connection_id UUID NOT NULL,
 		cursor JSONB NOT NULL,
 		status TEXT NOT NULL,
-		watermark TEXT NOT NULL,
+		sync_state JSONB NOT NULL,
 		updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
 		CONSTRAINT streams_state_connection_id_mame_unique UNIQUE (connection_id, name),
 		FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
