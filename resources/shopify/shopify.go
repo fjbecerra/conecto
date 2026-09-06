@@ -50,9 +50,11 @@ func(s *ShopifyResource) Close() error {
 	return s.client.Close()
 }
 
-func (s *ShopifyResource) Connector(cfg config.ConfigBytes) engines.ConnectorRunnable {
+func (s *ShopifyResource) Connector(name string, fieldSpecs config.FieldsSpecs, cfg config.ConfigBytes) engines.ConnectorRunnable {
     connectorConfig,_ := config.Unmarshal[ShopifyConnectorConfig](cfg, config.FormatJSON)
     shopifyConnector:= ShopifyConnector{
+		name: name,
+		fieldSpecs: fieldSpecs,
         httpClient : s.client,
         credentialService: s.credentialService,
         retryExecutor: s.retryExecutor,

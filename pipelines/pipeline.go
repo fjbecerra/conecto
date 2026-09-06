@@ -46,7 +46,7 @@ func (p *PipelineRegistry)  createStreams(cfg config.Streams) []engines.Stream{
 	for _, st := range cfg.Streams{
 		
 		connector := p.resourceRegistry.Get(resources.ResourceName(st.Connector.Resource))
-		connectorRunnable := connector.Connector(st.Connector.Config)
+		connectorRunnable := connector.Connector(st.Name ,st.FieldsSpecs, st.Connector.Config)
 		sink:= p.resourceRegistry.Get(resources.ResourceName(st.Sink.Resource))
 		sinkCommiter:= sink.Sink(st.Sink.Config, st.FieldsSpecs)
 		tfs := 	[]core.Transformer{}

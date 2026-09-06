@@ -11,7 +11,7 @@
             "connector":{
                 "resource": "shopify_1",                
                  "config": {
-                    //"query": "query ProductsPage($after: String, $query: String) { products(first: 10, after: $after, query: $query) { edges { node { id title createdAt updatedAt } } pageInfo { hasNextPage endCursor } } }"
+                    "batch_size": 250,
                     "sync": {
                         "backfill_last_n_days": 90,
                         "incremental_last_n_days": 2

@@ -32,7 +32,7 @@ func (m *MemoryResource) Close() error{
 	return nil
 }
 
-func (m *MemoryResource) Connector(cfg config.ConfigBytes) engines.ConnectorRunnable {
+func (m *MemoryResource) Connector(name string, fieldSpecs config.FieldsSpecs, cfg config.ConfigBytes) engines.ConnectorRunnable {
     return nil
 }
 

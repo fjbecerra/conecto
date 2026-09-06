@@ -7,14 +7,18 @@ import (
 	"conecto/core/statestores"
 	"conecto/resources/base/api"
 	"conecto/resources/base/api/graphql"
+	"conecto/shared/config"
 	"conecto/stores/credentials"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
 
 type ShopifyConnector struct {
+	name			  	string
+	fieldSpecs			config.FieldsSpecs
     httpClient        	*api.HttpClient
     credentialService 	credentials.CredentialService
 	retryExecutor 		*retry.Executor
@@ -22,16 +26,13 @@ type ShopifyConnector struct {
 }
 
 func CreateShopifyConnector(shopifyConnector ShopifyConnector) engines.ConnectorRunnable {
-	//name:= shopifyConnector.cfg.Name
-	query:=shopifyConnector.cfg.Query
-
 	provider:= &api.HeaderProvider{
 		Name: "X-Shopify-Access-Token",
 	}
 	
 	builder:= &graphql.GraphQLRequestBuilder{
 		EndpointProvider:  &ShopifyEndpointProvider{},
-		Query:    query,
+		Query: buildQuery(shopifyConnector.name, shopifyConnector.fieldSpecs, shopifyConnector.cfg.BatchSize),
 		VariableCursorKey: "after",
 		SyncRequestProvider: &ShopifySyncRequestProvider{
 			backfillLastNDays: shopifyConnector.cfg.BackfillLastNDays,
@@ -41,12 +42,12 @@ func CreateShopifyConnector(shopifyConnector ShopifyConnector) engines.Connector
 	}
 
 	dataExtractor := &graphql.GraphQLDataExtractor{
-		Path: fmt.Sprintf("data.%s.edges", name),
+		Path: fmt.Sprintf("data.%s.edges", shopifyConnector.name),
 	}
 
 	cursorExtractor := &graphql.GraphQLCursorExtractor{
-		HasMorePath: fmt.Sprintf("data.%s.pageInfo.hasNextPage", name),
-		CursorPath:  fmt.Sprintf("data.%s.pageInfo.endCursor", name),
+		HasMorePath: fmt.Sprintf("data.%s.pageInfo.hasNextPage", shopifyConnector.name),
+		CursorPath:  fmt.Sprintf("data.%s.pageInfo.endCursor", shopifyConnector.name),
 	}
 
 	client := *api.NewClient(shopifyConnector.httpClient, provider, shopifyConnector.credentialService)
@@ -102,6 +103,33 @@ func (p *ShopifyEndpointProvider) Apply(connection core.Connection) string {
 	shop := connection.Metadata["shop"]
 	apiVersion := connection.Metadata["api_version"]
 	return fmt.Sprintf("https://%s.myshopify.com/admin/api/%s/graphql.json", shop, apiVersion)
+}
+
+func  buildQuery(name string, fieldSpecs config.FieldsSpecs, batchSize int) string{
+	fields := []string{}
+	for _, fieldSpec := range fieldSpecs {
+		fields = append(fields, fieldSpec.Path)
+	}
+	query := `query %sPage($after: String, $query: String) {
+				%s(first: %d, after: $after, query: $query) {
+					edges {
+						node {
+							%s
+						}
+					}
+					pageInfo {
+						hasNextPage
+						endCursor
+					}
+				}
+			}`
+	return fmt.Sprintf(
+		query,
+		name,       
+		name,      
+		batchSize,         
+		strings.Join(fields, " "),
+	)
 }
 
 type ShopifySyncRequestProvider struct {

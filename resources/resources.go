@@ -47,7 +47,7 @@ type ResourceFactory func(config.Resource,)Resource
 
 type Resource interface {
 	 Close() error
-     Connector(cfg config.ConfigBytes) engines.ConnectorRunnable
+     Connector(name string, fieldSpecs config.FieldsSpecs, cfg config.ConfigBytes) engines.ConnectorRunnable
      Sink(cfg config.ConfigBytes, fieldSpecs config.FieldsSpecs)  engines.SinkCommiter
      Transformers() []core.Transformer
 }

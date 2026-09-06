@@ -8,6 +8,7 @@ type ShopifyResourceConfig struct{
 }
 
 type ShopifyConnectorConfig struct{
+	BatchSize int `json:"batch_size"`
 	BackfillLastNDays int `json:"backfill_last_n_days"`
 	IncrementalLastNDays int `json:"incremental_last_n_days"`
 }

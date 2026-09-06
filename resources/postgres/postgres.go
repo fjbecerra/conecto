@@ -47,7 +47,7 @@ func (p *PostgresResource) Sink(cfg config.ConfigBytes, fieldsSpecs config.Field
 	return CreatePostgresSink(postgresSink)
 }
 
-func (p *PostgresResource) Connector(cfg config.ConfigBytes) engines.ConnectorRunnable {
+func (p *PostgresResource) Connector(name string, fieldSpecs config.FieldsSpecs, cfg config.ConfigBytes) engines.ConnectorRunnable {
 	return nil
 }
 
