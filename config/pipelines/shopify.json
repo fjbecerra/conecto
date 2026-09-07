@@ -22,12 +22,6 @@
                 "config":{
                     "table" : "shopify_products",
                     "auto_create": true
-                },
-                "batch_size" : 10,   
-                "retry": {
-                    "max_retries": 3,
-                    "backoff_ms": 500,
-                    "max_backoff" : 500
                 }
             }            
         }
