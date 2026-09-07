@@ -11,9 +11,8 @@
             "connector":{
                 "resource": "shopify_1",                
                  "config": {
-                    "batch_size": 250,
+                    "batch_size": 10,
                     "sync": {
-                        "backfill_last_n_days": 90,
                         "incremental_last_n_days": 2
                     }
                 }             

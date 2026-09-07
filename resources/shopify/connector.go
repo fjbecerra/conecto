@@ -35,8 +35,8 @@ func CreateShopifyConnector(shopifyConnector ShopifyConnector) engines.Connector
 		Query: buildQuery(shopifyConnector.name, shopifyConnector.fieldSpecs, shopifyConnector.cfg.BatchSize),
 		VariableCursorKey: "after",
 		SyncRequestProvider: &ShopifySyncRequestProvider{
-			backfillLastNDays: shopifyConnector.cfg.BackfillLastNDays,
-			watermarkLastNDays: shopifyConnector.cfg.IncrementalLastNDays,
+			backfillLastNDays: shopifyConnector.cfg.Sync.BackfillLastNDays,
+			watermarkLastNDays: shopifyConnector.cfg.Sync.IncrementalLastNDays,
 		},
 
 	}
@@ -151,7 +151,7 @@ func (s *ShopifySyncRequestProvider) Apply(syncState statestores.SyncState) map[
 		t, _ := time.Parse(time.RFC3339, syncState["watermark"])
 		from := t.AddDate(0, 0, s.watermarkLastNDays)
 		return map[string]any{
-				"query": fmt.Sprintf("updated_at>%s", from),
+				"query": fmt.Sprintf("updated_at>%s", from.UTC().Format(time.RFC3339)),
 		}
 	}
 	return nil

@@ -21,7 +21,7 @@ func (c *HttpConnector) FetchBatch(context context.Context, state statestores.St
 		}
 	}
 
-	page, err := c.Provider.FetchPage(context, pc, connection, state.SyncState)
+	page, err := c.Provider.FetchPage(context, pc, connection, &state.SyncState)
 	if err != nil {
 		return core.Batch{}, err
 	}

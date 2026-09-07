@@ -46,7 +46,7 @@ func (a *SinkEngine) Commit(context context.Context, ID string, streamName strin
                 statestores.State{
                     Cursor: batch.Cursor,
                     Status: status,
-                    SyncState: &batch.SyncState,
+                    SyncState: batch.SyncState,
                 },
             )
 

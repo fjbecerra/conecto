@@ -1,7 +1,9 @@
 package oauth
 
 import (
+	"conecto/core"
 	"net/http"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -17,24 +19,19 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) Authorize(w http.ResponseWriter,r *http.Request) {
 	connectionID := chi.URLParam(r, "connectionID")
+	connection, err := h.service.GetConnection(r.Context(), connectionID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	//antoher methd in the service to check if the connection exists and is valid
-	// connection := h.service.FindByIdentity(resource, identity)
+	if(connection.Status == core.StatusConnected){
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Already connected."))
+		return
+	}
 
-	// if connection != nil {
-	// 	// Already connected.
-	// 	// Update token if necessary.
-	// 	// Don't enqueue initial backfill.
-	// w.WriteHeader(http.StatusOK)
-	// w.Write([]byte("Alreay connected."))
-	// 	
-	// }
-
-
-	redirectURL, err := h.service.BeginAuthorization(
-		r.Context(),
-		connectionID,
-	)
+	redirectURL, err := h.service.BeginAuthorization(r.Context(),connection,)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

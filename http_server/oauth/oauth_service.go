@@ -36,12 +36,16 @@ func NewService(
 		}
 }
 
-func (s *Service) BeginAuthorization(ctx context.Context, connectionID string) (string, error) {
-
+func (s *Service) GetConnection(ctx context.Context, connectionID string) (core.Connection, error) {
 	connection, err := s.connectionStore.Get(ctx, connectionID)
 	if err != nil {
-		return "", err
+		return core.Connection{}, err
 	}
+
+	return connection, nil
+}
+
+func (s *Service) BeginAuthorization(ctx context.Context, connection core.Connection) (string, error) {
 
 	oauthentication:= s.resourceRegistry.Get(resources.ResourceName(connection.ResourceName))
 	oauthProvider, ok := oauthentication.(api.OAuthProvider)
@@ -49,7 +53,7 @@ func (s *Service) BeginAuthorization(ctx context.Context, connectionID string) (
 		return "", errors.New("resource does not support OAuth")
 	}
 
-	state, err := s.stateSigner.Sign(connectionID)
+	state, err := s.stateSigner.Sign(connection.ID)
 
 	if err != nil {
 		return "", err

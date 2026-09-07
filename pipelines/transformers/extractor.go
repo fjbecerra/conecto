@@ -55,7 +55,7 @@ func (e *Extractor) Transform(ctx context.Context, batch *core.Batch) (*core.Bat
 		Events: out,
 		Cursor: batch.Cursor,
 		IsLast: batch.IsLast,
-		Watermark: batch.Watermark,
+		SyncState: batch.SyncState,
 	},nil
 
 	

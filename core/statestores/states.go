@@ -18,7 +18,7 @@ const (
 type State struct {
 	Cursor     Cursor
 	Status     StateStatus
-	SyncState  *SyncState 
+	SyncState  SyncState 
 }
 
 type Cursor map[string]string
